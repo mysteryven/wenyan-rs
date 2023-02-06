@@ -1,0 +1,12 @@
+{
+  "name": "wenyan-rs-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "",
+  "scripts": {
+    "dev": "cd playground && pnpm dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,17 +1,10 @@
 /target
-
-
-# Added by cargo
-#
-# already existing elements were commented out
-
-#/target
 /Cargo.lock
+/node_modules
+/target
+**/*.rs.bk
+bin/
+pkg/
+wasm-pack.log
 
 
-# Added by cargo
-#
-# already existing elements were commented out
-
-#/target
-#/Cargo.lock
