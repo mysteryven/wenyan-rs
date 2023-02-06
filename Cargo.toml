@@ -3,7 +3,7 @@ name = "wenyan-rs"
 version = "0.1.0"
 authors = ["wenzhe <mysteryven@gmail.com>"]
 edition = "2021"
-description = "A interpreter for wenyan lang"
+description = "A bytecode interpreter implemented in Rust for wenyan lang"
 license = "MIT"
 repository = "https://github.com/mysteryven/wenyan-rs"
 
