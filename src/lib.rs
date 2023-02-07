@@ -1,3 +1,6 @@
+mod position;
+mod scanner;
+mod token;
 mod utils;
 
 use wasm_bindgen::prelude::*;
