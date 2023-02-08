@@ -1,10 +1,23 @@
+#[derive(Debug)]
 pub struct WithSpan<T> {
-    pub value: T,
-    pub span: Span,
+    value: T,
+    span: Span,
 }
 
+impl<T> WithSpan<T> {
+    pub fn new(value: T, span: Span) -> Self {
+        WithSpan { value, span }
+    }
+
+    pub fn get_value(&self) -> &T {
+        &self.value
+    }
+}
+
+#[derive(Debug)]
 pub struct BytePos(pub usize);
 
+#[derive(Debug)]
 pub struct Span {
     pub start: BytePos,
     pub end: BytePos,
