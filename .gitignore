@@ -5,6 +5,7 @@
 **/*.rs.bk
 bin/
 pkg/
+snapshots/
 wasm-pack.log
 
 

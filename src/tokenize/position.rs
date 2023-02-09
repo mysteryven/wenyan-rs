@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
 pub struct WithSpan<T> {
     value: T,
     span: Span,
@@ -14,10 +16,10 @@ impl<T> WithSpan<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct BytePos(pub usize);
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Span {
     pub start: BytePos,
     pub end: BytePos,

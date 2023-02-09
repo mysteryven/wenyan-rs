@@ -1,4 +1,6 @@
-#[derive(Clone, Debug)]
+use serde::Serialize;
+
+#[derive(Clone, Debug, Serialize)]
 pub enum Token {
     Decl,
     Type,

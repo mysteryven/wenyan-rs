@@ -14,6 +14,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2.63"
+serde = { version = "1.0", features = ["derive"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -25,8 +26,10 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 # compared to the default allocator's ~10K. It is slower than the default
 # allocator, however.
 wee_alloc = { version = "0.4.5", optional = true }
+insta = "1.26.0"
 
 [dev-dependencies]
+insta = { version = "1.26.0", features = ["yaml"] }
 wasm-bindgen-test = "0.3.13"
 
 [profile.release]
