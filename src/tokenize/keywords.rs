@@ -2,22 +2,35 @@ use insta::assert_debug_snapshot;
 
 use super::token::Token;
 
-pub fn get_sorted_keywords() -> Vec<(Vec<char>, Token)> {
+fn get_keywords() -> Vec<(Vec<char>, Token)> {
     let mut key_defines = Vec::new();
 
-    key_defines.push(("有", Token::Decl));
     key_defines.push(("吾有", Token::Decl));
+    key_defines.push(("有", Token::Decl));
     key_defines.push(("數", Token::Type));
     key_defines.push(("言", Token::Type));
+    key_defines.push(("書之", Token::Print));
 
-    let mut final_keywords: Vec<(Vec<char>, Token)> = key_defines
+    let mut keywords: Vec<(Vec<char>, Token)> = key_defines
         .iter()
         .map(|(str, token)| (str.chars().collect::<Vec<char>>(), token.clone()))
         .collect();
 
+    keywords
+}
+
+pub fn get_sorted_keywords() -> Vec<(Vec<char>, Token)> {
+    let mut final_keywords = get_keywords();
     for ch in get_number_keywords() {
         final_keywords.push((vec![ch], Token::Number));
     }
+
+    final_keywords.sort_by(|a, b| {
+        let (a_chars, _) = a;
+        let (b_chars, _) = b;
+
+        b_chars.len().cmp(&a_chars.len())
+    });
 
     final_keywords
 }

@@ -8,6 +8,7 @@ struct Scanner {
     chars: Vec<char>,
     current: usize,
     start: usize,
+    line: usize,
 }
 
 impl Scanner {
@@ -16,6 +17,7 @@ impl Scanner {
             chars: buf.chars().collect(),
             current: 0,
             start: 0,
+            line: 1,
         }
     }
 
@@ -40,6 +42,7 @@ impl Scanner {
     }
 
     pub fn scan_token(&mut self, sorted_keywords: &[(Vec<char>, Token)]) -> WithSpan<Token> {
+        self.skip_whitespace();
         self.start = self.current;
 
         if self.is_at_end() {
@@ -47,6 +50,21 @@ impl Scanner {
         }
 
         self.try_match_keyword(sorted_keywords)
+    }
+
+    pub fn skip_whitespace(&mut self) {
+        loop {
+            match self.peek() {
+                Some(' ') | Some('\r') | Some('\t') | Some('。') | Some('、') => {
+                    self.advance();
+                }
+                Some('\n') => {
+                    self.line += 1;
+                    self.advance();
+                }
+                _ => return,
+            }
+        }
     }
 
     pub fn error_token(&self, msg: &str) -> WithSpan<Token> {
@@ -66,14 +84,14 @@ impl Scanner {
     }
 
     fn peek(&self) -> Option<char> {
-        match self.chars.get(self.current) {
-            Some(c) => Some(c.clone()),
-            None => None,
-        }
+        self.peek_any_num(0)
     }
 
     fn peek_next(&self) -> Option<char> {
-        match self.chars.get(self.current + 1) {
+        self.peek_any_num(1)
+    }
+    fn peek_any_num(&self, index: usize) -> Option<char> {
+        match self.chars.get(self.current + index) {
             Some(c) => Some(c.clone()),
             None => None,
         }
@@ -137,11 +155,12 @@ impl Scanner {
             '「' => {
                 self.advance();
                 if self.peek() == Some('「') {
-                    return self.string();
+                    return self.string_single_quota();
                 }
 
                 return self.identifier();
             }
+            '『' => return self.string_double_quota(),
             _ => {
                 let keyword = sorted_keywords
                     .iter()
@@ -158,12 +177,23 @@ impl Scanner {
         }
     }
 
-    fn string(&mut self) -> WithSpan<Token> {
+    fn string_single_quota(&mut self) -> WithSpan<Token> {
         self.advance();
         self.consume_while(|ch| ch != Some('」'));
 
         if self.peek() == Some('」') && self.peek_next() == Some('」') {
             self.step_by(2);
+            return self.make_token(Token::String);
+        }
+
+        return self.error_token("unterminated string.");
+    }
+
+    fn string_double_quota(&mut self) -> WithSpan<Token> {
+        self.advance();
+        self.consume_while(|ch| ch != Some('』'));
+
+        if self.consume('』') {
             return self.make_token(Token::String);
         }
 
@@ -244,6 +274,11 @@ mod test {
     #[test]
     fn test_scan_string_token() {
         generate_tokens_snapshot("「「一·三五」」");
+    }
+
+    #[test]
+    fn test_scan_double_string_token() {
+        generate_tokens_snapshot("『一·三五』");
     }
 
     #[test]
