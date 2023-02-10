@@ -1,5 +1,3 @@
-use insta::assert_debug_snapshot;
-
 use super::token::Token;
 
 fn get_keywords() -> Vec<(Vec<char>, Token)> {
@@ -51,9 +49,16 @@ pub fn get_number_keywords() -> [char; 40] {
     ]
 }
 
-#[test]
-fn test_ordered_keywords() {
-    let keywords = get_sorted_keywords();
-    let keys: Vec<Vec<char>> = keywords.into_iter().map(|(key, _)| key).collect();
-    assert_debug_snapshot!(&keys);
+#[cfg(test)]
+mod test {
+    use insta::assert_debug_snapshot;
+
+    use crate::tokenize::keywords::get_sorted_keywords;
+
+    #[test]
+    fn test_ordered_keywords() {
+        let keywords = get_sorted_keywords();
+        let keys: Vec<Vec<char>> = keywords.into_iter().map(|(key, _)| key).collect();
+        assert_debug_snapshot!(&keys);
+    }
 }

@@ -190,7 +190,6 @@ impl Scanner {
     }
 
     fn string_double_quota(&mut self) -> WithSpan<Token> {
-        todo!("accept 」 in mid");
         self.advance();
         self.consume_while(|ch| ch != Some('』'));
 
@@ -278,7 +277,7 @@ mod test {
     }
 
     #[test]
-    fn test_scan_string_token() {
+    fn test_scan_double_string_token() {
         generate_tokens_snapshot("『一·三五』");
     }
 

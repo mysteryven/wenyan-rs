@@ -1,5 +1,3 @@
-use int_enum::IntEnum;
-
 use crate::opcode;
 
 struct Chunk {
@@ -35,9 +33,10 @@ impl Chunk {
         let op_code = self.code.get(offset).unwrap().clone();
 
         let new_offset = match op_code {
-            opcode::RETURN => self.disassemble_simple_instruction(&line, offset, "OP_Return"),
+            opcode::RETURN => self.disassemble_simple_instruction(&mut line, offset, "OP_Return"),
             _ => {
-                line.push_str(format!("unDisassembled OPCode: {:?}", op_code).as_str());
+                // this is a unknown opcode
+                line.push_str(format!("{:>16}", format!("{}({})", op_code, "unknown")).as_str());
                 offset + 1
             }
         };
@@ -48,12 +47,48 @@ impl Chunk {
     }
     pub fn disassemble_simple_instruction(
         &self,
-        result: &String,
+        result: &mut String,
         offset: usize,
         name: &str,
     ) -> usize {
-        result.push_str(format!("{:>8}", name).as_str());
+        result.push_str(format!("{:>16}", name).as_str());
 
         offset + 1
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use insta::{assert_snapshot, assert_yaml_snapshot};
+
+    use crate::opcode;
+
+    use super::Chunk;
+
+    #[test]
+    fn disassemble_simple_ins() {
+        let mut chunk = Chunk::new();
+        chunk.write(opcode::RETURN);
+        let strs = chunk.disassemble("test");
+
+        assert_yaml_snapshot!(strs, @r###"
+        ---
+        - "== test =="
+        - 00000000       OP_Return
+        "###);
+    }
+
+    #[test]
+    fn disassemble_unknown_ins() {
+        let mut chunk = Chunk::new();
+        chunk.write(255);
+        chunk.write(opcode::RETURN);
+        let strs = chunk.disassemble("test");
+        assert_yaml_snapshot!(strs, @r###"
+        ---
+        - "== test =="
+        - 00000000    255(unknown)
+        - 00000001       OP_Return
+        "###)
     }
 }
