@@ -1,7 +1,9 @@
 mod chunk;
+mod debug;
+mod opcode;
 mod tokenize;
 mod utils;
-mod opcode;
+mod value;
 
 use wasm_bindgen::prelude::*;
 
