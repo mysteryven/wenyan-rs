@@ -1,5 +1,7 @@
+mod chunk;
 mod tokenize;
 mod utils;
+mod opcode;
 
 use wasm_bindgen::prelude::*;
 
