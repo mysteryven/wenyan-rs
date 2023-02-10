@@ -1,10 +1,14 @@
 mod chunk;
+mod compiler;
 mod debug;
+mod interpreter;
 mod opcode;
 mod tokenize;
 mod utils;
 mod value;
+mod vm;
 
+use interpreter::interpret;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -19,6 +23,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet(str: &str) {
-    alert(str);
+pub fn run(str: &str) {
+    interpret()
 }

@@ -4,7 +4,7 @@ use super::{
     token::Token,
 };
 
-struct Scanner {
+pub struct Scanner {
     chars: Vec<char>,
     current: usize,
     start: usize,

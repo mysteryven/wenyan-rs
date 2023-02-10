@@ -15,11 +15,10 @@ pub enum Token {
 
     Print, // 書之
 
-    // op
+    // ARITH_BINARY_OP
     Plus,  // 加
-    Minus, // 减
+    Minus, // 減
     Star,  // 乘
-    Slash, // 除
 
     // if logic
     EqualEqual,
