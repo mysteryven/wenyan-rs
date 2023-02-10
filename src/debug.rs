@@ -23,37 +23,43 @@ impl<'a> Debugger<'a> {
         result
     }
     pub fn disassemble_instruction(&self, result: &mut Vec<String>, offset: usize) -> usize {
-        let mut line = String::new();
-        line.push_str(format!("{:08}", offset).as_str());
-        if offset > 0 && self.chunk.get_line(offset) == self.chunk.get_line(offset - 1) {
-            line.push_str(format!(" {:<4}", "|").as_str());
+        let mut opcode_metadata = String::new();
+        opcode_metadata.push_str(format!("{:08}", offset).as_str());
+        let line_info = if offset > 0 && self.chunk.get_line(offset) == self.chunk.get_line(offset - 1) {
+            format!(" {:<4}", "|").as_str()
         } else {
-            line.push_str(format!(" {:<4}", self.chunk.get_line(offset)).as_str())
-        }
+            format!(" {:<4}", self.chunk.get_line(offset)).as_str()
+        };
+        opcode_metadata.push_str(line_info)
 
         let op_code = self.chunk.code().get(offset).unwrap().clone();
 
         let new_offset = match op_code {
-            opcode::RETURN => self.disassemble_simple_instruction(&mut line, offset, "OP_Return"),
-            opcode::CONSTANT => self.constant_instruction(&mut line, offset, "OP_Constant"),
+            opcode::RETURN => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Return")
+            }
+            opcode::CONSTANT => {
+                self.constant_instruction(&mut opcode_metadata, offset, "OP_Constant")
+            }
             _ => {
                 // this is a unknown opcode
-                line.push_str(format!("{:<20}", format!("{}({})", op_code, "unknown")).as_str());
+                opcode_metadata
+                    .push_str(format!("{:<20}", format!("{}({})", op_code, "unknown")).as_str());
                 offset + 1
             }
         };
 
-        result.push(line);
+        result.push(opcode_metadata);
 
         new_offset
     }
     pub fn disassemble_simple_instruction(
         &self,
-        line: &mut String,
+        opcode_metadata: &mut String,
         offset: usize,
         name: &str,
     ) -> usize {
-        line.push_str(format!(" {:<20}", name).as_str());
+        opcode_metadata.push_str(format!(" {:<20}", name).as_str());
 
         offset + 1
     }
