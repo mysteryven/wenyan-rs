@@ -26,7 +26,7 @@ impl<T> WithSpan<T> {
     }
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Default, Clone, Copy)]
 pub struct BytePos(pub usize);
 
 impl BytePos {

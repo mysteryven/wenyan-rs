@@ -4,6 +4,7 @@ mod convert;
 mod debug;
 mod interpreter;
 mod opcode;
+mod statements;
 mod tokenize;
 mod utils;
 mod value;

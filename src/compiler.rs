@@ -1,7 +1,9 @@
 use crate::{
     chunk::Chunk,
+    convert::hanzi2num,
     opcode,
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
+    value::Value,
 };
 
 pub struct Parser<'a> {
@@ -43,7 +45,7 @@ impl<'a> Parser<'a> {
     fn end_compiler(&mut self) {
         self.emit_return();
     }
-    fn emit_u8(&mut self, byte: u8) {
+    pub fn emit_u8(&mut self, byte: u8) {
         let line_number = self.previous().get_line();
         self.current_chunk_mut().add_u8(byte, line_number);
     }
@@ -54,7 +56,25 @@ impl<'a> Parser<'a> {
     fn emit_return(&mut self) {
         self.emit_u8(opcode::RETURN);
     }
-    fn previous(&self) -> &WithSpan<Token> {
+    fn emit_constant(&mut self, value: Value) {
+        self.emit_u8(opcode::CONSTANT);
+        if let Some(num) = self.make_constant(value) {
+            self.emit_u32(num);
+        }
+    }
+    fn make_constant(&mut self, value: Value) -> Option<u32> {
+        let constant = self.current_chunk_mut().add_constant(value);
+
+        match u32::try_from(constant) {
+            Ok(num) => Some(num),
+            Err(_) => {
+                self.error("Too many constants in one chunk.");
+                None
+            }
+        }
+    }
+
+    pub fn previous(&self) -> &WithSpan<Token> {
         self.previous.as_ref().unwrap()
     }
     fn advance(&mut self) {
@@ -82,16 +102,26 @@ impl<'a> Parser<'a> {
         self.error_at_current(msg);
     }
 
-    fn error_at_current(&mut self, msg: &str) {
+    pub fn is_match(&mut self, token: Token) -> bool {
+        match self.is_kind_of(self.current.as_ref().unwrap(), token) {
+            true => {
+                self.advance();
+                true
+            }
+            false => false,
+        }
+    }
+
+    pub fn error_at_current(&mut self, msg: &str) {
         self.has_error = true;
 
         self.error_at(self.current.as_ref().unwrap(), msg)
     }
-    fn error(&mut self, msg: &str) {
+    pub fn error(&mut self, msg: &str) {
         self.has_error = true;
         self.error_at(self.previous.as_ref().unwrap(), msg)
     }
-    fn error_at(&self, token: &WithSpan<Token>, msg: &str) {
+    pub fn error_at(&self, token: &WithSpan<Token>, msg: &str) {
         print!("[line {}] error", token.get_line());
 
         if self.is_kind_of(token, Token::Eof) {
@@ -112,6 +142,16 @@ impl<'a> Parser<'a> {
     fn is_kind_of(&self, t: &WithSpan<Token>, target: Token) -> bool {
         *t.get_value() == target
     }
+    fn pick_str(&self, token: &WithSpan<Token>) -> &str {
+        let start = token.get_start();
+        let end = token.get_end();
 
-    fn expression(&mut self) {}
+        &self.buf[start..end]
+    }
+    fn number(&mut self) {
+        let s = self.pick_str(&self.previous());
+        let value = Value::Number(hanzi2num::hanzi2num(s));
+        self.emit_constant(value);
+    }
+    pub fn expression(&mut self) {}
 }

@@ -20,6 +20,13 @@ pub enum Token {
     Minus, // 減
     Star,  // 乘
 
+    // preposition
+    PrepositionLeft,  // 於
+    PrepositionRight, // 以
+
+    // Unary OP
+    Invert, // 變
+
     // if logic
     EqualEqual,
     BangEqual,
