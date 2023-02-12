@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub enum Token {
     Decl,
     Define,

@@ -109,7 +109,7 @@ impl Scanner {
     }
 
     pub fn make_token(&self, token: Token) -> WithSpan<Token> {
-        WithSpan::new(token, Span::new(self.start, self.current))
+        WithSpan::new(token, Span::new(self.start, self.current), self.line)
     }
 
     fn advance(&mut self) {
