@@ -1,12 +1,13 @@
 use crate::{
     chunk::Chunk,
+    opcode,
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
 };
 
 pub struct Parser<'a> {
     scanner: Scanner,
     buf: &'a str,
-    chunk: &'a mut Chunk,
+    compiling_chunk: &'a mut Chunk,
     current: Option<WithSpan<Token>>,
     previous: Option<WithSpan<Token>>,
     has_error: bool,
@@ -19,14 +20,43 @@ impl<'a> Parser<'a> {
         Self {
             scanner,
             buf,
-            chunk,
+            compiling_chunk: chunk,
             current: None,
             previous: None,
             has_error: false,
         }
     }
-    pub fn compile(&mut self) {}
-    fn binary_statement() {}
+    pub fn current_chunk_mut(&mut self) -> &mut Chunk {
+        self.compiling_chunk
+    }
+    pub fn compile(&mut self) -> bool {
+        self.has_error = false;
+
+        self.advance();
+        self.expression();
+
+        self.consume(Token::Eof, "Expect end of expression");
+
+        self.end_compiler();
+        return self.has_error;
+    }
+    fn end_compiler(&mut self) {
+        self.emit_return();
+    }
+    fn emit_u8(&mut self, byte: u8) {
+        let line_number = self.previous().get_line();
+        self.current_chunk_mut().add_u8(byte, line_number);
+    }
+    fn emit_u32(&mut self, byte: u32) {
+        let line_number = self.previous().get_line();
+        self.current_chunk_mut().add_u32(byte, line_number);
+    }
+    fn emit_return(&mut self) {
+        self.emit_u8(opcode::RETURN);
+    }
+    fn previous(&self) -> &WithSpan<Token> {
+        self.previous.as_ref().unwrap()
+    }
     fn advance(&mut self) {
         self.previous = self.current.take();
 
@@ -82,4 +112,6 @@ impl<'a> Parser<'a> {
     fn is_kind_of(&self, t: &WithSpan<Token>, target: Token) -> bool {
         *t.get_value() == target
     }
+
+    fn expression(&mut self) {}
 }
