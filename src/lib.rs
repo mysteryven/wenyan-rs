@@ -1,5 +1,6 @@
 mod chunk;
 mod compiler;
+mod convert;
 mod debug;
 mod interpreter;
 mod opcode;

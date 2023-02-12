@@ -26,8 +26,14 @@ impl<T> WithSpan<T> {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 pub struct BytePos(pub usize);
+
+impl BytePos {
+    pub fn shift(&mut self, ch: char) {
+        self.0 += ch.len_utf8()
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct Span {
@@ -41,5 +47,8 @@ impl Span {
             start: BytePos(start),
             end: BytePos(end),
         }
+    }
+    pub fn from(start: BytePos, end: BytePos) -> Self {
+        Self { start, end }
     }
 }

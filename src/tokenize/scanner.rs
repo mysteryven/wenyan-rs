@@ -1,6 +1,6 @@
 use super::{
     keywords::{get_number_keywords, get_sorted_keywords},
-    position::{Span, WithSpan},
+    position::{BytePos, Span, WithSpan},
     token::Token,
 };
 
@@ -8,6 +8,8 @@ pub struct Scanner {
     chars: Vec<char>,
     current: usize,
     start: usize,
+    current_pos: BytePos,
+    start_pos: BytePos,
     line: usize,
     sorted_keywords: Vec<(Vec<char>, Token)>,
 }
@@ -18,6 +20,8 @@ impl Scanner {
             chars: buf.chars().collect(),
             current: 0,
             start: 0,
+            current_pos: BytePos::default(),
+            start_pos: BytePos::default(),
             line: 1,
             sorted_keywords: get_sorted_keywords(),
         }
@@ -45,6 +49,7 @@ impl Scanner {
     pub fn scan_token(&mut self) -> WithSpan<Token> {
         self.skip_whitespace();
         self.start = self.current;
+        self.start_pos = self.current_pos;
 
         if self.is_at_end() {
             return self.make_token(Token::Eof);
@@ -109,15 +114,26 @@ impl Scanner {
     }
 
     pub fn make_token(&self, token: Token) -> WithSpan<Token> {
-        WithSpan::new(token, Span::new(self.start, self.current), self.line)
+        WithSpan::new(
+            token,
+            Span::from(self.start_pos, self.current_pos),
+            self.line,
+        )
     }
 
     fn advance(&mut self) {
+        let next_c = self.chars.get(self.current + 1);
+
+        if let Some(c) = next_c {
+            self.current_pos.shift(*c)
+        }
         self.current += 1
     }
 
     fn step_by(&mut self, step: usize) {
-        self.current += step
+        for _ in 0..step {
+            self.advance()
+        }
     }
 
     fn peek(&self) -> Option<char> {
