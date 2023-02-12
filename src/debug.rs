@@ -25,12 +25,11 @@ impl<'a> Debugger<'a> {
     pub fn disassemble_instruction(&self, result: &mut Vec<String>, offset: usize) -> usize {
         let mut opcode_metadata = String::new();
         opcode_metadata.push_str(format!("{:08}", offset).as_str());
-        let line_info = if offset > 0 && self.chunk.get_line(offset) == self.chunk.get_line(offset - 1) {
-            format!(" {:<4}", "|").as_str()
+        if offset > 0 && self.chunk.get_line(offset) == self.chunk.get_line(offset - 1) {
+            opcode_metadata.push_str(format!(" {:<4}", "|").as_str())
         } else {
-            format!(" {:<4}", self.chunk.get_line(offset)).as_str()
+            opcode_metadata.push_str(format!(" {:<4}", self.chunk.get_line(offset)).as_str())
         };
-        opcode_metadata.push_str(line_info)
 
         let op_code = self.chunk.code().get(offset).unwrap().clone();
 

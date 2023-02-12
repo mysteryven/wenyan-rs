@@ -9,10 +9,10 @@ pub enum InterpretStatus {
 pub fn interpret(buf: &str) {
     let mut chunk = Chunk::new();
 
-    let compiler = Parser::new(buf, &mut chunk);
+    let mut compiler = Parser::new(buf, &mut chunk);
 
     compiler.compile();
 
-    let vm = VM::new(&chunk, chunk.code());
+    let mut vm = VM::new(&chunk, chunk.code());
     vm.run();
 }

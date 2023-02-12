@@ -15,7 +15,6 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("加", Token::Plus));
     key_defines.push(("減", Token::Minus));
     key_defines.push(("乘", Token::Star));
-    key_defines.push(("除", Token::Slash));
 
     let mut keywords: Vec<(Vec<char>, Token)> = key_defines
         .iter()

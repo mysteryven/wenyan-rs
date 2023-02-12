@@ -9,6 +9,7 @@ pub struct Scanner {
     current: usize,
     start: usize,
     line: usize,
+    sorted_keywords: Vec<(Vec<char>, Token)>,
 }
 
 impl Scanner {
@@ -18,15 +19,15 @@ impl Scanner {
             current: 0,
             start: 0,
             line: 1,
+            sorted_keywords: get_sorted_keywords(),
         }
     }
 
     pub fn scan_tokens(&mut self) -> Vec<WithSpan<Token>> {
-        let sorted_keywords = get_sorted_keywords();
         let mut list = vec![];
 
         loop {
-            let token = self.scan_token(&sorted_keywords);
+            let token = self.scan_token();
             let is_end = match token.get_value() {
                 Token::Eof => true,
                 _ => false,
@@ -41,7 +42,7 @@ impl Scanner {
         return list;
     }
 
-    pub fn scan_token(&mut self, sorted_keywords: &[(Vec<char>, Token)]) -> WithSpan<Token> {
+    pub fn scan_token(&mut self) -> WithSpan<Token> {
         self.skip_whitespace();
         self.start = self.current;
 
@@ -49,7 +50,43 @@ impl Scanner {
             return self.make_token(Token::Eof);
         }
 
-        self.try_match_keyword(sorted_keywords)
+        self.try_match_keyword()
+    }
+
+    fn try_match_keyword(&mut self) -> WithSpan<Token> {
+        let ch = self.peek().expect("has char to consume").clone();
+        if self.is_numeric(Some(ch)) {
+            return self.number();
+        }
+        match ch {
+            '「' => {
+                self.advance();
+                if self.peek() == Some('「') {
+                    return self.string_single_quota();
+                }
+
+                return self.identifier();
+            }
+            '『' => return self.string_double_quota(),
+            _ => {
+                let keyword = &self
+                    .sorted_keywords
+                    .iter()
+                    .find(|(keyword, _)| self.check_keyword(keyword));
+
+                let data;
+
+                if let Some((chs, token)) = keyword {
+                    data = (Some(chs.len()), Some(token.clone()));
+                } else {
+                    self.advance();
+                    return self.error_token("Unexpected character.");
+                }
+
+                self.step_by(data.0.unwrap());
+                return self.make_token(data.1.unwrap());
+            }
+        }
     }
 
     pub fn skip_whitespace(&mut self) {
@@ -144,37 +181,6 @@ impl Scanner {
 
     fn is_at_end(&self) -> bool {
         self.current >= self.chars.len()
-    }
-
-    fn try_match_keyword(&mut self, sorted_keywords: &[(Vec<char>, Token)]) -> WithSpan<Token> {
-        let ch = self.peek().expect("has char to consume").clone();
-        if self.is_numeric(Some(ch)) {
-            return self.number();
-        }
-        match ch {
-            '「' => {
-                self.advance();
-                if self.peek() == Some('「') {
-                    return self.string_single_quota();
-                }
-
-                return self.identifier();
-            }
-            '『' => return self.string_double_quota(),
-            _ => {
-                let keyword = sorted_keywords
-                    .iter()
-                    .find(|(keyword, _)| self.check_keyword(keyword));
-
-                if let Some((chs, token)) = keyword {
-                    self.step_by(chs.len());
-                    return self.make_token(token.clone());
-                }
-
-                self.advance();
-                return self.error_token("Unexpected character.");
-            }
-        }
     }
 
     fn string_single_quota(&mut self) -> WithSpan<Token> {

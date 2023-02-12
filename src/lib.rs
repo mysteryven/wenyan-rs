@@ -24,5 +24,5 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn run(str: &str) {
-    interpret()
+    interpret("吾有一言")
 }
