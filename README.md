@@ -22,6 +22,8 @@ Must use `「` for variable and `「「` for string. The handbook has this rule,
 
 Has static type check. For example, we can't assign a number to `言`(the string type in wenyan language). The [online IDE](https://ide.wy-lang.org/) not check this rule(If there some consideration, please let me know!), I think it makes sense to throw a error before run it.
 
+Not support NaN/Infi
+
 ## Credits
 
 - [Crafting Interpreters](http://craftinginterpreters.com/)

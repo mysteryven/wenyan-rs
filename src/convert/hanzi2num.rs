@@ -1,6 +1,6 @@
 // copy from https://github.com/wenyan-lang/wenyan/blob/master/src/converts/hanzi2num.ts
 // and rewrite it to Rust version.
-
+// Note: I finally not use it.
 use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -94,14 +94,14 @@ const NEG_WORD: &str = "負";
 const INF_WORD: &str = "無限大數";
 const NAN_WORD: &str = "不可算數";
 
-fn tokenize(s: &str) -> Vec<NumberToken> {
+fn tokenize(s: &str) -> Option<Vec<NumberToken>> {
     let num_tokens_map = get_num_tokens();
     let mut ret = vec![];
     let iterator = s.chars().into_iter();
     for ch in iterator {
         match num_tokens_map.get(&ch) {
             Some(value) => ret.push(value.clone()),
-            None => {}
+            None => return None,
         }
     }
 
@@ -112,9 +112,10 @@ fn tokenize(s: &str) -> Vec<NumberToken> {
         expr: None,
     });
 
-    return ret;
+    return Some(ret);
 }
 
+#[derive(PartialEq, Eq)]
 enum EDigitState {
     NONE,            // <END>, ·
     MULT,            // 微
@@ -123,7 +124,7 @@ enum EDigitState {
     DIGIT_WITH_ZERO, // 一...零, 零零， 零一...零,
     DELIM,           // 又
     ZERO,            // 零<END>, 零·, 零又, 零微, 零一
-    Sign,            // 負
+    SIGN,            // 負
 
     ZERO_MULT_AMBIG, // 零十 (ambiguous: 零一十 or 零十 or 〇十)
 }
@@ -190,13 +191,13 @@ impl MutlStack {
     }
 }
 
-struct ParserResult {
+struct ParseResult {
     sign: i8, // +1/-1
     exp: Exp, // one plus exponent of the highest digit
     digits: Vec<Digit>,
 }
 
-impl ParserResult {
+impl ParseResult {
     pub fn new() -> Self {
         Self {
             sign: 1,
@@ -240,11 +241,11 @@ impl ParserResult {
     }
 }
 
-pub fn parser(tokens: Vec<NumberToken>) -> Option<ParserResult> {
+pub fn parser(tokens: Vec<NumberToken>) -> Option<ParseResult> {
     let mut digit_state = EDigitState::NONE;
 
     let mut mult_stack = MutlStack::new();
-    let mut result = ParserResult::new();
+    let mut result = ParseResult::new();
 
     for token in tokens.iter().rev() {
         if mult_stack.state() == EMultState::SIGN && token.kind() == &TT::BEGIN {
@@ -354,23 +355,19 @@ pub fn parser(tokens: Vec<NumberToken>) -> Option<ParserResult> {
         }
 
         // determine the exponent of tail digits
-      if (mult_stack.state() === EMultState.NONE) {
-        switch (token.type) {
-          case TT::INT_MULT:
-            // exponent is correct
-            break;
+        if mult_stack.state() == EMultState::NONE {
+            match token.kind {
+                // exponent is correct
+                TT::INT_MULT => {}
+                TT::DECIMAL | TT::FRAC_MULT => {
+                    if !token.expr.is_none() {
+                        result.reset_exp(exp);
+                    }
+                }
 
-          case TT::DECIMAL:
-          case TT::FRAC_MULT:
-            if (token.exp != null) {
-              result.resetExp(token.exp);
+                _ => {}
             }
-            break;
-
-          default:
-            break;
         }
-      }
 
         // determine the current exponent and update exponent stack
         let curr_exp = match token.kind {
@@ -469,11 +466,147 @@ pub fn parser(tokens: Vec<NumberToken>) -> Option<ParserResult> {
         if curr_exp.is_none() {
             return None;
         }
+
+        let cur_exp = curr_exp.unwrap();
+
+        // check for disallowed missing decimal places
+        if cur_exp > result.exp() {
+            let check = || {
+                if token.kind == TT::BEGIN || token.kind == TT::SIGN {
+                    return true;
+                }
+
+                if digit_state == EDigitState::DELIM || digit_state == EDigitState::ZERO {
+                    return true;
+                }
+
+                if token.kind == TT::INT_MULT {
+                    return true;
+                }
+
+                if token.kind == TT::FRAC_MULT || token.kind == TT::DECIMAL {
+                    return true;
+                }
+
+                return false;
+            };
+
+            if !check() {
+                return None;
+            }
+
+            if mult_stack.state() != EMultState::DONE {
+                result.fill_zeros(cur_exp);
+            }
+        }
+
+        // push the digit, update parser state
+        match token.kind {
+            TT::BEGIN => {}
+            TT::SIGN => {
+                result.apply_sign(token.sign.expect("valid sign"));
+                digit_state = EDigitState::SIGN;
+            }
+
+            TT::DIGIT => {
+                result.push_char(token.digit.expect("token digit"));
+                if digit_state == EDigitState::ZERO || digit_state == EDigitState::DIGIT_WITH_ZERO {
+                    digit_state = EDigitState::DIGIT_WITH_ZERO;
+                } else {
+                    digit_state = EDigitState::DIGIT;
+                }
+            }
+
+            TT::DECIMAL => {
+                digit_state = EDigitState::NONE;
+            }
+
+            TT::INT_MULT => {
+                digit_state = EDigitState::MULT_AMBIG;
+            }
+
+            TT::FRAC_MULT => {
+                digit_state = EDigitState::MULT;
+            }
+
+            TT::DELIM => {
+                digit_state = EDigitState::DELIM;
+            }
+
+            TT::ZERO => match digit_state {
+                EDigitState::NONE | EDigitState::MULT | EDigitState::DIGIT | EDigitState::DELIM => {
+                    result.push_char(token.digit.expect("expect digit"));
+                    digit_state = EDigitState::ZERO;
+                }
+
+                EDigitState::DIGIT_WITH_ZERO | EDigitState::ZERO => {
+                    result.push_char(token.digit.expect("expect digit"));
+                    digit_state = EDigitState::ZERO;
+                }
+
+                EDigitState::MULT_AMBIG => {
+                    digit_state = EDigitState::ZERO_MULT_AMBIG;
+                }
+                _ => {}
+            },
+            _ => {}
+        }
     }
-    None
+
+    if result.digits().len() == 0 {
+        return None;
+    }
+
+    Some(ParseResult {
+        sign: result.sign(),
+        exp: result.exp() - result.digits().len() as isize,
+        digits: result.digits(),
+    })
+}
+
+fn get_digit(result: ParseResult, exp: Exp) -> char {
+    let idx = exp - result.exp;
+    match usize::try_from(idx) {
+        Ok(v) => result.digits.get(v).unwrap_or(&'0').clone(),
+        Err(_) => '0',
+    }
+}
+
+fn compare_magnitude(resultA: ParseResult, resultB: ParseResult) -> Exp {
+    let getMaxExp = |result: ParseResult| result.exp + (result.digits.len() - 1) as isize;
+
+    let maxExp = getMaxExp(resultA).max(getMaxExp(resultB));
+    let minExp = resultA.exp.min(resultB.exp);
+
+    let mut i = maxExp;
+
+    while i >= minExp {
+        let digitA = get_digit(resultA, i);
+        let digitB = get_digit(resultB, i);
+        if digitA > digitB {
+            return 1;
+        } else if digitA < digitB {
+            return -1;
+        }
+
+        i -= 1;
+    }
+
+    return 0;
 }
 
 pub fn hanzi2num(s: &str) -> Option<f64> {
+    let tokens = tokenize(s);
+    if tokens.is_none() {
+        return None;
+    }
+
+    let result = parser(tokens.unwrap());
+
+    if result.is_none() {
+        return None;
+    }
+
     None
 }
 
