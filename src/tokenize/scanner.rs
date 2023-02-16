@@ -150,9 +150,9 @@ impl Scanner {
         }
     }
 
-    fn consume(&mut self, ch: char) -> bool {
+    fn consume(&mut self, _ch: char) -> bool {
         match self.peek() {
-            Some(ch) => {
+            Some(_ch) => {
                 self.advance();
                 true
             }
@@ -245,13 +245,13 @@ impl Scanner {
     }
 }
 
-pub fn wenyan2token(buf: &str) -> WithSpan<Token> {
+pub fn wenyan2token(_buf: &str) -> WithSpan<Token> {
     todo!()
 }
 
 #[cfg(test)]
 mod test {
-    use crate::tokenize::{position::WithSpan, token::Token};
+    
 
     use super::Scanner;
 

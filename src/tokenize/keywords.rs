@@ -20,7 +20,7 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
 
     key_defines.push(("變", Token::Invert));
 
-    let mut keywords: Vec<(Vec<char>, Token)> = key_defines
+    let keywords: Vec<(Vec<char>, Token)> = key_defines
         .iter()
         .map(|(str, token)| (str.chars().collect::<Vec<char>>(), token.clone()))
         .collect();

@@ -1,4 +1,4 @@
-use crate::{opcode, value::Value};
+use crate::{value::Value};
 
 pub struct Chunk {
     code: Vec<u8>,

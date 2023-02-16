@@ -25,6 +25,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn run(str: &str) {
+pub fn run(_str: &str) {
     interpret("吾有一言")
 }

@@ -1,6 +1,5 @@
 use crate::{
     chunk::Chunk,
-    convert::hanzi2num,
     opcode,
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -149,7 +148,7 @@ impl<'a> Parser<'a> {
         &self.buf[start..end]
     }
     fn number(&mut self) {
-        let s = self.pick_str(&self.previous());
+        let _s = self.pick_str(&self.previous());
         let value = Value::Number(111.0);
         self.emit_constant(value);
     }
