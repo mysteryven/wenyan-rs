@@ -97,6 +97,12 @@ const NAN_WORD: &str = "不可算數";
 fn tokenize(s: &str) -> Option<Vec<NumberToken>> {
     let num_tokens_map = get_num_tokens();
     let mut ret = vec![];
+    ret.push(NumberToken {
+        kind: TT::BEGIN,
+        digit: None,
+        sign: None,
+        expr: None,
+    });
     let iterator = s.chars().into_iter();
     for ch in iterator {
         match num_tokens_map.get(&ch) {
@@ -201,7 +207,7 @@ impl ParseResult {
     pub fn new() -> Self {
         Self {
             sign: 1,
-            exp: 1,
+            exp: 0,
             digits: vec![],
         }
     }
@@ -247,7 +253,11 @@ fn parse(tokens: Vec<NumberToken>) -> Option<ParseResult> {
     let mut mult_stack = MutlStack::new();
     let mut result = ParseResult::new();
 
+    // parses the number string backwards, discarding <END>
     for token in tokens.iter().rev() {
+        if token.kind == TT::END {
+            continue;
+        }
         if mult_stack.state() == EMultState::SIGN && token.kind() == &TT::BEGIN {
             return None;
         }
@@ -411,11 +421,11 @@ fn parse(tokens: Vec<NumberToken>) -> Option<ParseResult> {
             // 釐絲 -> error
             TT::DECIMAL | TT::FracMult => {
                 if digit_state == EDigitState::MULT {
-                    return None;
+                    None
                 } else {
                     mult_stack.clear();
                     mult_stack.push(exp);
-                    return None;
+                    Some(mult_stack.total())
                 }
             }
 
@@ -458,7 +468,8 @@ fn parse(tokens: Vec<NumberToken>) -> Option<ParseResult> {
                     }
                     _ => {}
                 }
-                return None;
+
+                Some(mult_stack.total())
             }
             _ => None,
         };
@@ -572,20 +583,20 @@ fn get_digit(result: &ParseResult, exp: Exp) -> char {
     }
 }
 
-fn compare_magnitude(resultA: &ParseResult, resultB: &ParseResult) -> Exp {
-    let getMaxExp = |result: &ParseResult| result.exp + (result.digits.len() - 1) as isize;
+fn compare_magnitude(result_a: &ParseResult, result_b: &ParseResult) -> Exp {
+    let get_max_exp = |result: &ParseResult| result.exp + (result.digits.len() - 1) as isize;
 
-    let maxExp = getMaxExp(resultA).max(getMaxExp(resultB));
-    let minExp = resultA.exp.min(resultB.exp);
+    let max_exp = get_max_exp(result_a).max(get_max_exp(result_b));
+    let min_exp = result_a.exp.min(result_b.exp);
 
-    let mut i = maxExp;
+    let mut i = max_exp;
 
-    while i >= minExp {
-        let digitA = get_digit(resultA, i);
-        let digitB = get_digit(resultB, i);
-        if digitA > digitB {
+    while i >= min_exp {
+        let digit_a = get_digit(result_a, i);
+        let digit_b = get_digit(result_b, i);
+        if digit_a > digit_b {
             return 1;
-        } else if digitA < digitB {
+        } else if digit_a < digit_b {
             return -1;
         }
 
@@ -596,7 +607,7 @@ fn compare_magnitude(resultA: &ParseResult, resultB: &ParseResult) -> Exp {
 }
 
 pub fn hanzi2num(s: &str) -> Option<String> {
-    let RESULT_2_TO_63 = ParseResult {
+    let result_2_to_63 = ParseResult {
         sign: 1,
         exp: 0,
         digits: "9223372036854775808".chars().into_iter().rev().collect(),
@@ -621,10 +632,10 @@ pub fn hanzi2num(s: &str) -> Option<String> {
         "".to_owned()
     };
 
-    let printAsInt = match result.exp < 0 {
+    let print_as_int = match result.exp < 0 {
         false => false,
         true => {
-            let c = compare_magnitude(&result, &RESULT_2_TO_63);
+            let c = compare_magnitude(&result, &result_2_to_63);
             if result.sign < 0 {
                 c <= 0
             } else {
@@ -634,41 +645,41 @@ pub fn hanzi2num(s: &str) -> Option<String> {
     };
 
     if let Some(rend) = result.digits.iter().position(|x| *x != '0') {
-        let rendExp = result.exp + rend as isize;
+        let rend_exp = result.exp + rend as isize;
 
         let mut rbegin = result.digits.len();
         while result.digits[rbegin - 1] == '0' {
             rbegin -= 1;
         }
 
-        let rbeginExp = result.exp + rbegin as isize;
+        let rbegin_exp = result.exp + rbegin as isize;
 
         // compute length of fixed and scientific format
-        let expStr = String::new();
-        let mut printAsScientific = false;
-        if !printAsInt {
-            let scientificExp = result.exp + (rbegin - 1) as isize;
-            let mut expStr = if scientificExp < 0 { "e-" } else { "e+" }.to_owned();
-            expStr.push_str(scientificExp.abs().to_string().as_str());
+        let mut exp_str = String::new();
+        let mut print_as_scientific = false;
+        if !print_as_int {
+            let scientific_exp = result.exp + (rbegin - 1) as isize;
+            exp_str += if scientific_exp < 0 { "e-" } else { "e+" };
+            exp_str.push_str(scientific_exp.abs().to_string().as_str());
 
-            let fixedLen = if rendExp < 0 {
-                rbeginExp.max(1) - rendExp + 1
+            let fixed_len = if rend_exp < 0 {
+                rbegin_exp.max(1) - rend_exp + 1
             } else {
-                rbeginExp
+                rbegin_exp
             };
-            let scientificMagLen = if rbegin - rend > 1 {
+            let scientific_mag_len = if rbegin - rend > 1 {
                 rbegin - rend + 1
             } else {
                 1
             };
-            let temp = (scientificMagLen + expStr.len()) as isize;
+            let temp = (scientific_mag_len + exp_str.len()) as isize;
 
-            if temp < fixedLen {
-                printAsScientific = true;
+            if temp < fixed_len {
+                print_as_scientific = true;
             }
         }
 
-        if printAsScientific {
+        if print_as_scientific {
             str.push(result.digits[rbegin - 1]);
             if rbegin - 1 > rend {
                 str += ".";
@@ -678,19 +689,19 @@ pub fn hanzi2num(s: &str) -> Option<String> {
                     i -= 1;
                 }
             }
-            str += expStr.as_str();
+            str += exp_str.as_str();
             return Some(str);
         } else {
-            let mut i = rbeginExp.max(1);
+            let mut i = rbegin_exp.max(1);
             while i > 0 {
                 str.push(get_digit(&result, i - 1));
                 i -= 1;
             }
 
-            if rendExp < 0 {
+            if rend_exp < 0 {
                 str += ".";
                 let mut i = 0;
-                while i > rendExp {
+                while i > rend_exp {
                     str.push(get_digit(&result, i - 1));
                     i -= 1
                 }
@@ -703,12 +714,46 @@ pub fn hanzi2num(s: &str) -> Option<String> {
     }
 }
 
+fn str2f64(str: &str) -> Option<f64> {
+    match str.parse::<f64>() {
+        Ok(value) => Some(value),
+        Err(_) => None,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::hanzi2num;
 
     #[test]
-    fn test_hanzi2num_int() {
-        println!("{}", hanzi2num("一").unwrap());
+    fn test_hanzi2num_一極零二() {
+        assert_eq!(
+            hanzi2num("一極零二"),
+            Some("1000000000000000000000000000000000000000000000002".to_owned())
+        )
+    }
+
+    #[test]
+    fn test_hanzi2num_一極零二又三漠() {
+        assert_eq!(
+            hanzi2num("一極零二又三漠"),
+            Some("1000000000000000000000000000000000000000000000002.000000000003".to_owned())
+        )
+    }
+
+    #[test]
+    fn test_hanzi2num_一極零二京() {
+        assert_eq!(
+            hanzi2num("一極零二京"),
+            Some("1.00000000000000000000000000000002e+48".to_owned())
+        )
+    }
+
+    #[test]
+    fn test_hanzi2num_二十一京二千三百四十五兆六千七百八十億零九百萬零二百五十有一() {
+        assert_eq!(
+            hanzi2num("二十一京二千三百四十五兆六千七百八十億零九百萬零二百五十有一"),
+            Some("212345678009000251".to_owned())
+        )
     }
 }
