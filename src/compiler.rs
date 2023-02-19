@@ -164,6 +164,10 @@ impl<'a> Parser<'a> {
     pub fn expression(&mut self) {
         if self.is_kind_of(self.previous(), Token::Number) {
             self.number()
+        } else if self.is_kind_of(self.previous(), Token::True) {
+            self.emit_u8(opcode::TRUE)
+        } else if self.is_kind_of(self.previous(), Token::False) {
+            self.emit_u8(opcode::FALSE)
         }
     }
 }

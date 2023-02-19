@@ -9,6 +9,8 @@ pub enum Token {
 
     Number,
     String,
+    True,
+    False,
     Identifier,
 
     Is, // 曰

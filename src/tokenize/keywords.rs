@@ -12,6 +12,9 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("名之", Token::Define));
     key_defines.push(("曰", Token::Is));
 
+    key_defines.push(("陰", Token::False));
+    key_defines.push(("陽", Token::True));
+
     key_defines.push(("加", Token::Plus));
     key_defines.push(("減", Token::Minus));
     key_defines.push(("乘", Token::Star));

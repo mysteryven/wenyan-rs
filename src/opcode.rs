@@ -6,3 +6,5 @@ pub const PREPOSITION_RIGHT: u8 = 4;
 pub const ADD: u8 = 5;
 pub const SUBTRACT: u8 = 6;
 pub const MULTIPLY: u8 = 7;
+pub const TRUE: u8 = 8;
+pub const FALSE: u8 = 9;

@@ -1,4 +1,7 @@
-use crate::{chunk::Chunk, debug::Debugger, interpreter::InterpretStatus, opcode, value::Value};
+use crate::{
+    chunk::Chunk, debug::Debugger, interpreter::InterpretStatus, opcode, statements::unary,
+    value::Value,
+};
 
 pub struct VM<'a> {
     chunk: &'a Chunk,
@@ -42,18 +45,44 @@ impl<'a> VM<'a> {
         loop {
             self.show_stack();
             debugger.disassemble_instruction(&mut result, self.offset());
-            match self.read_byte() {
+            let byte = self.read_byte();
+            match byte {
                 opcode::CONSTANT => {
-                    if let Some(value) = self.read_constant() {
-                        self.stack.push(value.clone())
+                    if let Some(value) = self.read_constant().map(|x| x.clone()) {
+                        self.stack.push(value);
                     }
                 }
                 opcode::ADD => binary_op!(self, +),
                 opcode::SUBTRACT => binary_op!(self, -),
                 opcode::MULTIPLY => binary_op!(self, *),
                 opcode::RETURN => return InterpretStatus::Ok,
+                opcode::INVERT => {
+                    let val = match self.stack.pop() {
+                        Some(Value::Bool(false)) => Some(true),
+                        None => {
+                            self.runtime_error("not match expression after 變");
+                            None
+                        }
+                        _ => Some(false),
+                    };
+                    if let Some(b) = val {
+                        self.stack.push(Value::Bool(b))
+                    }
+                }
+                opcode::TRUE => self.stack.push(Value::Bool(true)),
+                opcode::FALSE => self.stack.push(Value::Bool(false)),
+                _ => {}
             }
         }
+    }
+    fn runtime_error(&mut self, msg: &str) {
+        eprintln!(
+            "[line {}]errors: {}",
+            self.chunk.get_line(self.offset()),
+            msg
+        );
+
+        self.stack.clear();
     }
     fn read_byte(&mut self) -> u8 {
         unsafe {
@@ -70,22 +99,39 @@ impl<'a> VM<'a> {
             value
         }
     }
-    fn print_value(&self, value: &Value) {}
+    fn print_value(&self, value: &Value) {
+        match value {
+            Value::Bool(boolean) => {
+                print!("{}", boolean)
+            }
+            Value::Number(num) => {
+                print!("{}", num)
+            }
+        }
+    }
     fn read_constant(&mut self) -> Option<&Value> {
         self.chunk.constants().get(self.read_u32() as usize)
     }
     fn binary_op(&mut self, op: BinaryOp) -> bool {
         let slice_start = self.stack.len() - 2;
+        let op_code = self.read_byte();
 
         match &self.stack[slice_start..] {
             [Value::Number(a), Value::Number(b)] => {
-                let value = op(*a, *b);
+                let num = match op_code {
+                    opcode::PREPOSITION_LEFT => op(*a, *b),
+                    opcode::PREPOSITION_RIGHT => op(*b, *a),
+                    _ => panic!("unreachable"),
+                };
                 self.stack.pop();
                 self.stack.pop();
-                self.stack.push(Value::Number(value));
+                self.stack.push(Value::Number(num));
                 true
             }
-            _ => false,
+            _ => {
+                self.runtime_error("Operands must be numbers.");
+                false
+            }
         }
     }
 }

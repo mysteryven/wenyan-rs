@@ -49,6 +49,12 @@ impl<'a> Debugger<'a> {
             opcode::MULTIPLY => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Multiply")
             }
+            opcode::TRUE => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_True")
+            }
+            opcode::FALSE => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_False")
+            }
             _ => {
                 // this is a unknown opcode
                 opcode_metadata
