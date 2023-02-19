@@ -3,7 +3,7 @@ use crate::{chunk::Chunk, compiler::Parser, vm::VM};
 pub enum InterpretStatus {
     CompilerError,
     RuntimeError,
-    Success,
+    Ok,
 }
 
 pub fn interpret(buf: &str) {
@@ -13,6 +13,6 @@ pub fn interpret(buf: &str) {
 
     compiler.compile();
 
-    let mut vm = VM::new(&chunk, chunk.code());
+    let mut vm = VM::new(&chunk, chunk.code().as_ptr());
     vm.run();
 }

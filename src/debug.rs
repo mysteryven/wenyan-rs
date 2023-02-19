@@ -40,6 +40,15 @@ impl<'a> Debugger<'a> {
             opcode::CONSTANT => {
                 self.constant_instruction(&mut opcode_metadata, offset, "OP_Constant")
             }
+            opcode::ADD => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Add")
+            }
+            opcode::SUBTRACT => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Subtract")
+            }
+            opcode::MULTIPLY => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Multiply")
+            }
             _ => {
                 // this is a unknown opcode
                 opcode_metadata

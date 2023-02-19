@@ -1,6 +1,5 @@
 // copy from https://github.com/wenyan-lang/wenyan/blob/master/src/converts/hanzi2num.ts
 // and rewrite it to Rust version.
-// Note: I finally not use it.
 use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq)]

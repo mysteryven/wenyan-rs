@@ -161,5 +161,9 @@ impl<'a> Parser<'a> {
             None => self.error("not a valid number"),
         }
     }
-    pub fn expression(&mut self) {}
+    pub fn expression(&mut self) {
+        if self.is_kind_of(self.previous(), Token::Number) {
+            self.number()
+        }
+    }
 }
