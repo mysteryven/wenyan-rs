@@ -80,7 +80,7 @@ impl<'a> Debugger<'a> {
     }
     pub fn disassemble_simple_instruction(
         &self,
-        opcode_metadata: &mut String,
+        _opcode_metadata: &mut String,
         offset: usize,
         name: &str,
     ) -> usize {
@@ -89,7 +89,7 @@ impl<'a> Debugger<'a> {
         offset + 1
     }
 
-    pub fn constant_instruction(&self, line: &mut String, offset: usize, name: &str) -> usize {
+    pub fn constant_instruction(&self, _line: &mut String, offset: usize, name: &str) -> usize {
         print!(" {:<20}", name);
         let constant = self.chunk.get_u32(offset + 1);
         let value = self.chunk.constants().get(constant as usize).unwrap();

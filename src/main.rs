@@ -12,12 +12,12 @@ mod vm;
 
 use std::{
     fs::File,
-    io::{BufReader, Read},
+    io::{Read},
 };
 
 use clap::Parser;
 use interpreter::interpret;
-use vm::{VMMode, VM};
+use vm::{VMMode};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
