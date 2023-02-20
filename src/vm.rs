@@ -1,6 +1,6 @@
 use crate::{
-    chunk::Chunk, debug::Debugger, interpreter::InterpretStatus, opcode, statements::unary,
-    value::Value,
+    chunk::Chunk, debug::Debugger, interpreter::InterpretStatus, opcode,
+    statements::unary_statement, value::Value,
 };
 
 pub struct VM<'a> {
@@ -32,11 +32,11 @@ impl<'a> VM<'a> {
         unsafe { self.ip.offset_from(self.chunk.code().as_ptr()) as usize }
     }
     pub fn show_stack(&self) {
-        println!("   ");
+        println!("  ");
         for val in self.stack.iter() {
             print!("[{:?}]", val);
         }
-        println!("")
+        println!("  ")
     }
     pub fn run(&mut self) -> InterpretStatus {
         let debugger = Debugger::new(self.chunk);

@@ -2,6 +2,7 @@ use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
     opcode,
+    statements::{binary_statement, expression_statement, unary_statement},
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
 };
@@ -35,12 +36,21 @@ impl<'a> Parser<'a> {
         self.has_error = false;
 
         self.advance();
-        self.expression();
+        self.statement();
 
         self.consume(Token::Eof, "Expect end of expression");
 
         self.end_compiler();
         return self.has_error;
+    }
+    fn statement(&mut self) {
+        let current = self.current.as_ref().unwrap().get_value().clone();
+
+        match current {
+            Token::Plus | Token::Minus | Token::Star => binary_statement(self, &current),
+            Token::Invert => unary_statement(self, &current),
+            _ => expression_statement(self),
+        }
     }
     fn end_compiler(&mut self) {
         self.emit_return();
@@ -77,21 +87,17 @@ impl<'a> Parser<'a> {
     pub fn previous(&self) -> &WithSpan<Token> {
         self.previous.as_ref().unwrap()
     }
-    fn advance(&mut self) {
+    pub fn advance(&mut self) {
         self.previous = self.current.take();
 
-        loop {
-            let token = self.scanner.scan_token();
+        let token = self.scanner.scan_token();
 
-            if self.is_kind_of(&token, Token::Eof) {
-                break;
-            }
-
-            match token.get_value() {
-                Token::Error(msg) => self.error_at_current(msg),
-                _ => {}
-            }
+        match token.get_value() {
+            Token::Error(msg) => self.error_at_current(msg),
+            _ => {}
         }
+
+        self.current = Some(token);
     }
     fn consume(&mut self, token: Token, msg: &str) {
         if self.is_kind_of(self.current.as_ref().unwrap(), token) {
@@ -162,6 +168,7 @@ impl<'a> Parser<'a> {
         }
     }
     pub fn expression(&mut self) {
+        self.advance();
         if self.is_kind_of(self.previous(), Token::Number) {
             self.number()
         } else if self.is_kind_of(self.previous(), Token::True) {

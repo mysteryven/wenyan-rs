@@ -1,6 +1,8 @@
 use crate::{compiler::Parser, opcode, tokenize::token::Token};
 
-pub fn unary(parser: &mut Parser, token: &Token) {
+pub fn unary_statement(parser: &mut Parser, token: &Token) {
+    parser.advance();
+
     parser.expression();
 
     match token {
@@ -11,22 +13,27 @@ pub fn unary(parser: &mut Parser, token: &Token) {
     }
 }
 
-pub fn binary(parser: &mut Parser, token: &Token) {
+pub fn expression_statement(parser: &mut Parser) {
+    parser.expression();
+}
+
+pub fn binary_statement(parser: &mut Parser, token: &Token) {
+    parser.advance();
+
+    parser.expression();
     let mut op_code = None;
     if parser.is_match(Token::PrepositionLeft) {
         op_code = Some(opcode::PREPOSITION_LEFT)
     } else if parser.is_match(Token::PrepositionRight) {
-        op_code = Some(opcode::PREPOSITION_RIGHT)
+        op_code = Some(opcode::PREPOSITION_RIGHT);
     };
+
+    parser.expression();
 
     if op_code.is_none() {
         parser.error("invalid preposition, you should use '於' or '以'.");
         return;
     }
-
-    parser.expression();
-
-    parser.emit_u8(op_code.unwrap());
 
     match token {
         Token::Plus => Some(opcode::ADD),
@@ -35,4 +42,6 @@ pub fn binary(parser: &mut Parser, token: &Token) {
         _ => None,
     }
     .map(|op_code| parser.emit_u8(op_code));
+
+    parser.emit_u8(op_code.unwrap());
 }

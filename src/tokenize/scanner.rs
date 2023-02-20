@@ -122,7 +122,7 @@ impl Scanner {
     }
 
     fn advance(&mut self) {
-        let next_c = self.chars.get(self.current + 1);
+        let next_c = self.chars.get(self.current);
 
         if let Some(c) = next_c {
             self.current_pos.shift(*c)
@@ -251,7 +251,6 @@ pub fn wenyan2token(_buf: &str) -> WithSpan<Token> {
 
 #[cfg(test)]
 mod test {
-    
 
     use super::Scanner;
 
@@ -321,5 +320,10 @@ mod test {
     #[test]
     fn test_scan_unterminated_identifier() {
         generate_tokens_snapshot("「甲");
+    }
+
+    #[test]
+    fn test_scan_binary() {
+        generate_tokens_snapshot("加一以二");
     }
 }
