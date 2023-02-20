@@ -13,6 +13,12 @@ pub fn unary_statement(parser: &mut Parser, token: &Token) {
     }
 }
 
+pub fn print_statement(parser: &mut Parser) {
+    parser.advance();
+
+    parser.emit_u8(opcode::PRINT);
+}
+
 pub fn expression_statement(parser: &mut Parser) {
     parser.expression();
 }

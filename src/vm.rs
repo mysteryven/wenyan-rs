@@ -1,7 +1,15 @@
+use std::fmt;
+
 use crate::{
     chunk::Chunk, debug::Debugger, interpreter::InterpretStatus, opcode,
     statements::unary_statement, value::Value,
 };
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum VMMode {
+    Debug,
+    Run,
+}
 
 pub struct VM<'a> {
     chunk: &'a Chunk,
@@ -38,19 +46,34 @@ impl<'a> VM<'a> {
         }
         println!("  ")
     }
-    pub fn run(&mut self) -> InterpretStatus {
+    pub fn run(&mut self, mode: VMMode) -> InterpretStatus {
         let debugger = Debugger::new(self.chunk);
         let mut result = vec![];
 
         loop {
-            self.show_stack();
-            debugger.disassemble_instruction(&mut result, self.offset());
+            if mode == VMMode::Debug {
+                self.show_stack();
+                debugger.disassemble_instruction(&mut result, self.offset());
+            }
             let byte = self.read_byte();
             match byte {
                 opcode::CONSTANT => {
                     if let Some(value) = self.read_constant().map(|x| x.clone()) {
                         self.stack.push(value);
                     }
+                }
+                opcode::PRINT => {
+                    for (idx, value) in self.stack.iter().enumerate() {
+                        self.print_value(&value);
+
+                        if idx != self.stack.len() - 1 {
+                            print!(" ")
+                        } else {
+                            println!("")
+                        }
+                    }
+
+                    self.stack.clear();
                 }
                 opcode::ADD => binary_op!(self, +),
                 opcode::SUBTRACT => binary_op!(self, -),
@@ -119,8 +142,8 @@ impl<'a> VM<'a> {
         match &self.stack[slice_start..] {
             [Value::Number(a), Value::Number(b)] => {
                 let num = match op_code {
-                    opcode::PREPOSITION_LEFT => op(*a, *b),
-                    opcode::PREPOSITION_RIGHT => op(*b, *a),
+                    opcode::PREPOSITION_LEFT => op(*b, *a),
+                    opcode::PREPOSITION_RIGHT => op(*a, *b),
                     _ => panic!("unreachable"),
                 };
                 self.stack.pop();

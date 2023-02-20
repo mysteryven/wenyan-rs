@@ -1,5 +1,5 @@
 [package]
-name = "wenyan-rs"
+name = "wyr"
 version = "0.1.0"
 authors = ["wenzhe <mysteryven@gmail.com>"]
 edition = "2021"
@@ -26,6 +26,8 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 # compared to the default allocator's ~10K. It is slower than the default
 # allocator, however.
 wee_alloc = { version = "0.4.5", optional = true }
+clap = { version = "4.1.6", features = ["derive"] }
+assert_cmd = "2.0.8"
 
 [dev-dependencies]
 insta = { version = "1.26.0", features = ["yaml"] }

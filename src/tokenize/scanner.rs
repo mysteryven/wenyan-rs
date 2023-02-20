@@ -326,4 +326,9 @@ mod test {
     fn test_scan_binary() {
         generate_tokens_snapshot("加一以二");
     }
+
+    #[test]
+    fn test_log() {
+        generate_tokens_snapshot("書之");
+    }
 }

@@ -8,3 +8,4 @@ pub const SUBTRACT: u8 = 6;
 pub const MULTIPLY: u8 = 7;
 pub const TRUE: u8 = 8;
 pub const FALSE: u8 = 9;
+pub const PRINT: u8 = 10;

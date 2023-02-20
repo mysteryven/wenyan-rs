@@ -2,7 +2,7 @@ use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
     opcode,
-    statements::{binary_statement, expression_statement, unary_statement},
+    statements::{binary_statement, expression_statement, print_statement, unary_statement},
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
 };
@@ -36,7 +36,10 @@ impl<'a> Parser<'a> {
         self.has_error = false;
 
         self.advance();
-        self.statement();
+
+        while !self.is_match(Token::Eof) {
+            self.statement();
+        }
 
         self.consume(Token::Eof, "Expect end of expression");
 
@@ -49,6 +52,7 @@ impl<'a> Parser<'a> {
         match current {
             Token::Plus | Token::Minus | Token::Star => binary_statement(self, &current),
             Token::Invert => unary_statement(self, &current),
+            Token::Print => print_statement(self),
             _ => expression_statement(self),
         }
     }
@@ -132,15 +136,6 @@ impl<'a> Parser<'a> {
 
         if self.is_kind_of(token, Token::Eof) {
             print!(" at end")
-        }
-
-        let is_match_error = match token.get_value() {
-            Token::Error(_) => true,
-            _ => false,
-        };
-
-        if !is_match_error {
-            print!(" at {} to {}", token.get_start(), token.get_end())
         }
 
         print!(": {}\n", msg)

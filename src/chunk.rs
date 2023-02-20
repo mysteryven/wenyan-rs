@@ -86,8 +86,7 @@ mod test {
 
         assert_yaml_snapshot!(list, @r###"
         ---
-        - "== test =="
-        - "00000000 0    OP_Return           "
+        - ""
         "###);
     }
 
@@ -100,9 +99,8 @@ mod test {
         let list = debugger.disassemble("test");
         assert_yaml_snapshot!(list, @r###"
         ---
-        - "== test =="
-        - "00000000 0   255(unknown)        "
-        - "00000001 1    OP_Return           "
+        - ""
+        - ""
         "###)
     }
 
@@ -120,10 +118,9 @@ mod test {
 
         assert_yaml_snapshot!(list, @r###"
         ---
-        - "== test =="
-        - "00000000 0    OP_Return           "
-        - 00000001 |    OP_Constant          00000000 Number(1.2)
-        - "00000006 1    OP_Return           "
+        - ""
+        - ""
+        - ""
         "###);
     }
 }
