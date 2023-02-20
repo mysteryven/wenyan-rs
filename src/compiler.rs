@@ -2,7 +2,10 @@ use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
     opcode,
-    statements::{binary_statement, expression_statement, print_statement, unary_statement},
+    statements::{
+        binary_if_statement, binary_statement, expression_statement, print_statement,
+        unary_statement,
+    },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
 };
@@ -53,6 +56,12 @@ impl<'a> Parser<'a> {
             Token::Plus | Token::Minus | Token::Star => binary_statement(self, &current),
             Token::Invert => unary_statement(self, &current),
             Token::Print => print_statement(self),
+            Token::BangEqual
+            | Token::EqualEqual
+            | Token::BangGreater
+            | Token::BangLess
+            | Token::Less
+            | Token::Greater => binary_if_statement(self, &current),
             _ => expression_statement(self),
         }
     }

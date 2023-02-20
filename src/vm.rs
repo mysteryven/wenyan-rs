@@ -1,8 +1,11 @@
 use std::fmt;
 
 use crate::{
-    chunk::Chunk, debug::Debugger, interpreter::InterpretStatus, opcode,
-    statements::unary_statement, value::Value,
+    chunk::Chunk,
+    debug::Debugger,
+    interpreter::InterpretStatus,
+    opcode,
+    value::{is_less, value_equal, Value},
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -94,6 +97,33 @@ impl<'a> VM<'a> {
                 }
                 opcode::TRUE => self.stack.push(Value::Bool(true)),
                 opcode::FALSE => self.stack.push(Value::Bool(false)),
+                opcode::EQUAL_EQUAL => {
+                    let right_operand = self.stack.pop();
+                    let left_operand = self.stack.pop();
+                    if let (Some(right_operand), Some(left_operand)) = (right_operand, left_operand)
+                    {
+                        self.stack
+                            .push(Value::Bool(value_equal(left_operand, right_operand)))
+                    }
+                }
+                opcode::LESS => {
+                    let right_operand = self.stack.pop();
+                    let left_operand = self.stack.pop();
+                    if let (Some(right_operand), Some(left_operand)) = (right_operand, left_operand)
+                    {
+                        self.stack
+                            .push(Value::Bool(is_less(left_operand, right_operand)))
+                    }
+                }
+                opcode::GREATER => {
+                    let right_operand = self.stack.pop();
+                    let left_operand = self.stack.pop();
+                    if let (Some(right_operand), Some(left_operand)) = (right_operand, left_operand)
+                    {
+                        self.stack
+                            .push(Value::Bool(is_less(right_operand, left_operand)))
+                    }
+                }
                 _ => {}
             }
         }

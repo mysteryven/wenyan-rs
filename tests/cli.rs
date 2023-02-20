@@ -37,3 +37,11 @@ pub fn test_unary_statement() -> TestResult {
         "tests/expected/unary-statement.out.wy",
     )
 }
+
+#[test]
+pub fn test_binary_if_statement() -> TestResult {
+    run(
+        "tests/inputs/binary-if-statement.wy",
+        "tests/expected/binary-if-statement.out.wy",
+    )
+}

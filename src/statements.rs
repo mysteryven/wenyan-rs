@@ -23,6 +23,29 @@ pub fn expression_statement(parser: &mut Parser) {
     parser.expression();
 }
 
+pub fn binary_if_statement(parser: &mut Parser, token: &Token) {
+    let op_code = match token {
+        Token::BangEqual | Token::EqualEqual => opcode::EQUAL_EQUAL,
+        Token::Greater | Token::BangGreater => opcode::GREATER,
+        Token::Less | Token::BangLess => opcode::LESS,
+        _ => {
+            parser.error_at_current("unknown if binary operator.");
+            return;
+        }
+    };
+
+    parser.advance();
+    parser.expression();
+    parser.emit_u8(op_code);
+
+    match token {
+        Token::BangEqual | Token::BangGreater | Token::BangLess => {
+            parser.emit_u8(opcode::INVERT);
+        }
+        _ => {}
+    };
+}
+
 pub fn binary_statement(parser: &mut Parser, token: &Token) {
     parser.advance();
 

@@ -58,6 +58,15 @@ impl<'a> Debugger<'a> {
             opcode::INVERT => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_INVERT")
             }
+            opcode::EQUAL_EQUAL => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_EQUAL_EQUAL")
+            }
+            opcode::GREATER => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_GREATER")
+            }
+            opcode::LESS => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_LESS")
+            }
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());

@@ -21,6 +21,13 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("於", Token::PrepositionLeft));
     key_defines.push(("以", Token::PrepositionRight));
 
+    key_defines.push(("等於", Token::EqualEqual));
+    key_defines.push(("不等於", Token::BangEqual));
+    key_defines.push(("不大於", Token::BangGreater));
+    key_defines.push(("不小於", Token::BangLess));
+    key_defines.push(("大於", Token::Greater));
+    key_defines.push(("小於", Token::Less));
+
     key_defines.push(("變", Token::Invert));
 
     let keywords: Vec<(Vec<char>, Token)> = key_defines
