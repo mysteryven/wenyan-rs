@@ -1,5 +1,3 @@
-
-
 use crate::{
     chunk::Chunk,
     debug::Debugger,
@@ -66,16 +64,13 @@ impl<'a> VM<'a> {
                     }
                 }
                 opcode::PRINT => {
-                    for (idx, value) in self.stack.iter().enumerate() {
-                        self.print_value(&value);
+                    let vec_str = self
+                        .stack
+                        .iter()
+                        .map(|x| self.format_value(x))
+                        .collect::<Vec<String>>();
 
-                        if idx != self.stack.len() - 1 {
-                            print!(" ")
-                        } else {
-                            println!("")
-                        }
-                    }
-
+                    println!("{}", vec_str.join(" "));
                     self.stack.clear();
                 }
                 opcode::ADD => binary_op!(self, +),
@@ -152,13 +147,13 @@ impl<'a> VM<'a> {
             value
         }
     }
-    fn print_value(&self, value: &Value) {
+    fn format_value(&self, value: &Value) -> String {
         match value {
             Value::Bool(boolean) => {
-                print!("{}", boolean)
+                format!("{}", boolean)
             }
             Value::Number(num) => {
-                print!("{}", num)
+                format!("{}", num)
             }
         }
     }
