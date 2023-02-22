@@ -1,0 +1,16 @@
+---
+source: src/tokenize/scanner.rs
+expression: tokens
+---
+- value:
+    Error: unterminated identifier.
+  span:
+    start: 0
+    end: 6
+  line: 1
+- value: Eof
+  span:
+    start: 6
+    end: 6
+  line: 1
+
