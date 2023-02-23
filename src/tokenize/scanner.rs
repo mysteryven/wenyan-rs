@@ -113,6 +113,24 @@ impl Scanner {
         self.make_token(Token::Error(String::from(msg)))
     }
 
+    pub fn make_token_in<const N: usize>(
+        &self,
+        token: Token,
+        left: [char; N],
+        right: [char; N],
+    ) -> WithSpan<Token> {
+        let mut start_pos = self.start_pos;
+        let mut end_pos = self.current_pos;
+        for ch in left {
+            start_pos.shift(ch);
+        }
+        for ch in right {
+            end_pos.backwards(ch);
+        }
+
+        WithSpan::new(token, Span::from(start_pos, end_pos), self.line)
+    }
+
     pub fn make_token(&self, token: Token) -> WithSpan<Token> {
         WithSpan::new(
             token,
@@ -205,7 +223,7 @@ impl Scanner {
 
         if self.peek() == Some('」') && self.peek_next() == Some('」') {
             self.step_by(2);
-            return self.make_token(Token::String);
+            return self.make_token_in(Token::String, ['「', '「'], ['」', '」']);
         }
 
         return self.error_token("unterminated string.");
@@ -216,7 +234,7 @@ impl Scanner {
         self.consume_while(|ch| ch != Some('』'));
 
         if self.consume('』') {
-            return self.make_token(Token::String);
+            return self.make_token_in(Token::String, ['『'], ['』']);
         }
 
         return self.error_token("unterminated string.");
@@ -226,7 +244,7 @@ impl Scanner {
         self.consume_while(|ch| ch != Some('」'));
 
         if self.consume('」') {
-            return self.make_token(Token::Identifier);
+            return self.make_token_in(Token::Identifier, ['「'], ['」']);
         }
 
         return self.error_token("unterminated identifier.");
@@ -243,10 +261,6 @@ impl Scanner {
 
         self.make_token(Token::Number)
     }
-}
-
-pub fn wenyan2token(_buf: &str) -> WithSpan<Token> {
-    todo!()
 }
 
 #[cfg(test)]

@@ -33,6 +33,9 @@ impl BytePos {
     pub fn shift(&mut self, ch: char) {
         self.0 += ch.len_utf8()
     }
+    pub fn backwards(&mut self, ch: char) {
+        self.0 -= ch.len_utf8()
+    }
 }
 
 #[derive(Debug, Serialize)]
