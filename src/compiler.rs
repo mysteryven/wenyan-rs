@@ -1,6 +1,7 @@
 use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
+    interpreter::Runtime,
     opcode,
     statements::{
         binary_if_statement, binary_statement, expression_statement, print_statement,
@@ -17,10 +18,11 @@ pub struct Parser<'a> {
     current: Option<WithSpan<Token>>,
     previous: Option<WithSpan<Token>>,
     has_error: bool,
+    runtime: &'a mut Runtime,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(buf: &'a str, chunk: &'a mut Chunk) -> Self {
+    pub fn new(buf: &'a str, chunk: &'a mut Chunk, runtime: &'a mut Runtime) -> Self {
         let scanner = Scanner::new(buf);
 
         Self {
@@ -30,6 +32,7 @@ impl<'a> Parser<'a> {
             current: None,
             previous: None,
             has_error: false,
+            runtime,
         }
     }
     pub fn current_chunk_mut(&mut self) -> &mut Chunk {
@@ -171,14 +174,23 @@ impl<'a> Parser<'a> {
             None => self.error("not a valid number"),
         }
     }
+    fn str_to_Value(&mut self) -> Value {
+        let start = self.previous().get_start();
+        let end = self.previous().get_end();
+        let s = &self.buf[start..end];
+        Value::String(self.runtime.interner_mut().intern(s))
+    }
     pub fn expression(&mut self) {
         self.advance();
-        if self.is_kind_of(self.previous(), Token::Number) {
-            self.number()
-        } else if self.is_kind_of(self.previous(), Token::True) {
-            self.emit_u8(opcode::TRUE)
-        } else if self.is_kind_of(self.previous(), Token::False) {
-            self.emit_u8(opcode::FALSE)
+        match *self.previous().get_value() {
+            Token::Number => self.number(),
+            Token::True => self.emit_u8(opcode::TRUE),
+            Token::False => self.emit_u8(opcode::FALSE),
+            Token::String => {
+                let value = self.str_to_Value();
+                self.emit_constant(value)
+            }
+            _ => self.error("Expect expression"),
         }
     }
 }

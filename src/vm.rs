@@ -1,7 +1,7 @@
 use crate::{
     chunk::Chunk,
     debug::Debugger,
-    interpreter::InterpretStatus,
+    interpreter::{InterpretStatus, Runtime},
     opcode,
     value::{is_less, value_equal, Value},
 };
@@ -16,6 +16,7 @@ pub struct VM<'a> {
     chunk: &'a Chunk,
     ip: *const u8,
     stack: Vec<Value>,
+    runtime: &'a Runtime,
 }
 
 type BinaryOp = fn(f64, f64) -> f64;
@@ -30,11 +31,12 @@ macro_rules! binary_op {
 }
 
 impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk, ip: *const u8) -> Self {
+    pub fn new(chunk: &'a Chunk, ip: *const u8, runtime: &'a Runtime) -> Self {
         Self {
             chunk,
             ip,
             stack: vec![],
+            runtime,
         }
     }
     pub fn offset(&self) -> usize {
@@ -154,6 +156,9 @@ impl<'a> VM<'a> {
             }
             Value::Number(num) => {
                 format!("{}", num)
+            }
+            Value::String(str) => {
+                format!("{}", self.runtime.interner().lookup(*str))
             }
         }
     }
