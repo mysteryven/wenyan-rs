@@ -16,22 +16,11 @@ pub struct VM<'a> {
     chunk: &'a Chunk,
     ip: *const u8,
     stack: Vec<Value>,
-    runtime: &'a Runtime,
-}
-
-type BinaryOp = fn(f64, f64) -> f64;
-
-// TODO optimize binary_op not use self.binary_op
-macro_rules! binary_op {
-    ($self:ident, $op:tt) => {
-        {
-            $self.binary_op(|a, b| a $op b);
-        }
-    }
+    runtime: &'a mut Runtime,
 }
 
 impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk, ip: *const u8, runtime: &'a Runtime) -> Self {
+    pub fn new(chunk: &'a Chunk, ip: *const u8, runtime: &'a mut Runtime) -> Self {
         Self {
             chunk,
             ip,
@@ -75,9 +64,9 @@ impl<'a> VM<'a> {
                     println!("{}", vec_str.join(" "));
                     self.stack.clear();
                 }
-                opcode::ADD => binary_op!(self, +),
-                opcode::SUBTRACT => binary_op!(self, -),
-                opcode::MULTIPLY => binary_op!(self, *),
+                opcode::ADD => self.binary_op("+"),
+                opcode::SUBTRACT => self.binary_op("-"),
+                opcode::MULTIPLY => self.binary_op("*"),
                 opcode::RETURN => return InterpretStatus::Ok,
                 opcode::INVERT => {
                     let val = match self.stack.pop() {
@@ -165,25 +154,45 @@ impl<'a> VM<'a> {
     fn read_constant(&mut self) -> Option<&Value> {
         self.chunk.constants().get(self.read_u32() as usize)
     }
-    fn binary_op(&mut self, op: BinaryOp) -> bool {
+    fn binary_op(&mut self, op: &str) {
         let slice_start = self.stack.len() - 2;
         let op_code = self.read_byte();
+
+        let compute = |a, b| match op {
+            "+" => a + b,
+            "-" => a - b,
+            "*" => a * b,
+            _ => panic!("unreachable"),
+        };
 
         match &self.stack[slice_start..] {
             [Value::Number(a), Value::Number(b)] => {
                 let num = match op_code {
-                    opcode::PREPOSITION_LEFT => op(*b, *a),
-                    opcode::PREPOSITION_RIGHT => op(*a, *b),
+                    opcode::PREPOSITION_LEFT => compute(*b, *a),
+                    opcode::PREPOSITION_RIGHT => compute(*a, *b),
                     _ => panic!("unreachable"),
                 };
                 self.stack.pop();
                 self.stack.pop();
                 self.stack.push(Value::Number(num));
-                true
+            }
+            [Value::String(a), Value::String(b)] => {
+                if op == "+" {
+                    let str = format!(
+                        "{}{}",
+                        self.runtime.interner().lookup(*a),
+                        self.runtime.interner().lookup(*b)
+                    );
+                    self.stack.pop();
+                    self.stack.pop();
+                    let str_id = self.runtime.interner_mut().intern(&str);
+                    self.stack.push(Value::String(str_id));
+                } else {
+                    self.runtime_error("two string only can be add");
+                }
             }
             _ => {
                 self.runtime_error("Operands must be numbers.");
-                false
             }
         }
     }

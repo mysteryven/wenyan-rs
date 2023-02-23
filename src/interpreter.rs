@@ -19,7 +19,7 @@ pub fn interpret(buf: &str, mode: VMMode) {
 
     compiler.compile();
 
-    let mut vm = VM::new(&chunk, chunk.code().as_ptr(), &runtime);
+    let mut vm = VM::new(&chunk, chunk.code().as_ptr(), &mut runtime);
     vm.run(mode);
 }
 
