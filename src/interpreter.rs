@@ -21,6 +21,8 @@ pub fn interpret(buf: &str, mode: VMMode) {
 
     let mut vm = VM::new(&chunk, chunk.code().as_ptr(), &mut runtime);
     vm.run(mode);
+
+    vm.free();
 }
 
 pub struct Runtime {
@@ -38,5 +40,8 @@ impl Runtime {
     }
     pub fn interner_mut(&mut self) -> &mut Interner {
         &mut self.interner
+    }
+    pub fn free(&mut self) {
+        self.interner.free()
     }
 }

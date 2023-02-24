@@ -2,6 +2,7 @@ use crate::{
     chunk::Chunk,
     debug::Debugger,
     interpreter::{InterpretStatus, Runtime},
+    memory::free_object,
     opcode,
     value::{is_less, value_equal, Value},
 };
@@ -113,6 +114,10 @@ impl<'a> VM<'a> {
                 _ => {}
             }
         }
+    }
+    pub fn free(&mut self) {
+        self.stack.clear();
+        free_object(self.runtime)
     }
     fn runtime_error(&mut self, msg: &str) {
         eprintln!(

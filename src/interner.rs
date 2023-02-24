@@ -8,7 +8,7 @@ pub struct Interner {
     idx: usize,
 }
 
-impl<'a> Interner {
+impl Interner {
     pub fn new() -> Interner {
         Interner {
             map: HashMap::new(),
@@ -34,6 +34,10 @@ impl<'a> Interner {
     pub fn lookup(&self, str_id: StrId) -> &str {
         let id = str_id.0;
         self.id_to_str.get(&id).expect("has a valid str")
+    }
+    pub fn free(&mut self) {
+        self.id_to_str.clear();
+        self.map.clear();
     }
     fn get_next_idx(&mut self) -> usize {
         let idx = self.idx;

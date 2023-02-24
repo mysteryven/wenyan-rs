@@ -4,6 +4,7 @@ mod convert;
 mod debug;
 mod interner;
 mod interpreter;
+mod memory;
 mod opcode;
 mod statements;
 mod tokenize;
@@ -52,7 +53,6 @@ fn main() {
         }
     }
 }
-
 
 #[test]
 
