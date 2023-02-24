@@ -1,54 +1,43 @@
-// thanks https://matklad.github.io/2020/03/22/fast-simple-rust-interner.html
+use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct StrId(u32);
 
-use std::{collections::HashMap, mem};
 pub struct Interner {
-    map: HashMap<&'static str, StrId>,
-    vec: Vec<&'static str>,
-    buf: String,
-    full: Vec<String>,
+    map: HashMap<&'static str, (String, StrId)>,
+    id_to_str: HashMap<u32, &'static str>,
+    idx: usize,
 }
 
-impl Interner {
-    pub fn with_capacity(cap: usize) -> Interner {
-        let cap = cap.next_power_of_two();
+impl<'a> Interner {
+    pub fn new() -> Interner {
         Interner {
-            map: HashMap::default(),
-            vec: Vec::new(),
-            buf: String::with_capacity(cap),
-            full: Vec::new(),
+            map: HashMap::new(),
+            id_to_str: HashMap::new(),
+            idx: 0,
         }
     }
     pub fn intern(&mut self, name: &str) -> StrId {
-        if let Some(&id) = self.map.get(name) {
-            return id;
+        if let Some((_, id)) = self.map.get(name) {
+            return *id;
         }
-        let name = unsafe { self.alloc(name) };
-        let id = self.map.len() as u32;
-        self.map.insert(name, StrId(id));
-        self.vec.push(name);
-        debug_assert!(self.lookup(StrId(id)) == name);
-        debug_assert!(self.intern(name) == StrId(id));
+
+        let string = String::from(name);
+        let name = unsafe { self.alloc(&string) };
+        let id = self.get_next_idx() as u32;
+        self.map.insert(name, (string, StrId(id)));
+        self.id_to_str.insert(id, name);
         StrId(id)
+    }
+    unsafe fn alloc(&self, name: &str) -> &'static str {
+        &*(name as *const str)
     }
     pub fn lookup(&self, str_id: StrId) -> &str {
         let id = str_id.0;
-        self.vec[id as usize]
+        self.id_to_str.get(&id).expect("has a valid str")
     }
-    unsafe fn alloc(&mut self, name: &str) -> &'static str {
-        let cap = self.buf.capacity();
-        if cap < self.buf.len() + name.len() {
-            let new_cap = (cap.max(name.len()) + 1).next_power_of_two();
-            let new_buf = String::with_capacity(new_cap);
-            let old_buf = mem::replace(&mut self.buf, new_buf);
-            self.full.push(old_buf);
-        }
-        let interned = {
-            let start = self.buf.len();
-            self.buf.push_str(name);
-            &self.buf[start..]
-        };
-        &*(interned as *const str)
+    fn get_next_idx(&mut self) -> usize {
+        let idx = self.idx;
+        self.idx += 1;
+        idx
     }
 }

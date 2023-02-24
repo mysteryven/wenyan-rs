@@ -30,7 +30,7 @@ pub struct Runtime {
 impl Runtime {
     pub fn new() -> Self {
         Self {
-            interner: Interner::with_capacity(100),
+            interner: Interner::new(),
         }
     }
     pub fn interner(&self) -> &Interner {
