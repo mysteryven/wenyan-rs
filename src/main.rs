@@ -8,7 +8,6 @@ mod memory;
 mod opcode;
 mod statements;
 mod tokenize;
-mod utils;
 mod value;
 mod vm;
 
