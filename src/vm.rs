@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
 use crate::{
     chunk::Chunk,
     debug::Debugger,
+    interner::StrId,
     interpreter::{InterpretStatus, Runtime},
     memory::free_object,
     opcode,
@@ -18,6 +21,7 @@ pub struct VM<'a> {
     ip: *const u8,
     stack: Vec<Value>,
     runtime: &'a mut Runtime,
+    globals: HashMap<String, Value>,
 }
 
 impl<'a> VM<'a> {
@@ -27,10 +31,14 @@ impl<'a> VM<'a> {
             ip,
             stack: vec![],
             runtime,
+            globals: HashMap::new(),
         }
     }
     pub fn offset(&self) -> usize {
         unsafe { self.ip.offset_from(self.chunk.code().as_ptr()) as usize }
+    }
+    pub fn peek(&self, distance: usize) -> Option<&Value> {
+        self.stack.get(self.stack.len() - 1 - distance)
     }
     pub fn show_stack(&self) {
         println!("  ");
@@ -111,6 +119,14 @@ impl<'a> VM<'a> {
                             .push(Value::Bool(is_less(right_operand, left_operand)))
                     }
                 }
+                opcode::DEFINE_GLOBAL => {
+                    let str = self.read_string();
+                    let offset = self.read_byte() as usize;
+                    let value = self.peek(offset);
+                    if let (Some(value), Some(str)) = (value, str) {
+                        self.globals.insert(str, value.clone());
+                    }
+                }
                 _ => {}
             }
         }
@@ -127,6 +143,17 @@ impl<'a> VM<'a> {
         );
 
         self.stack.clear();
+    }
+    pub fn read_string(&mut self) -> Option<String> {
+        let idx = self.read_constant().map(|x| x.clone());
+
+        match idx {
+            Some(Value::String(i)) => Some(self.runtime.interner().lookup(i.clone()).to_owned()),
+            _ => {
+                self.runtime_error("not find this string in interner.");
+                None
+            }
+        }
     }
     fn read_byte(&mut self) -> u8 {
         unsafe {

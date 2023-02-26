@@ -4,8 +4,8 @@ use crate::{
     interpreter::Runtime,
     opcode,
     statements::{
-        binary_if_statement, binary_statement, expression_statement, print_statement,
-        unary_statement,
+        binary_if_statement, binary_statement, expression_statement, normal_declaration,
+        print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -44,13 +44,32 @@ impl<'a> Parser<'a> {
         self.advance();
 
         while !self.is_match(Token::Eof) {
-            self.statement();
+            self.declaration();
         }
 
         self.consume(Token::Eof, "Expect end of expression");
 
         self.end_compiler();
         return self.has_error;
+    }
+    fn declaration(&mut self) {
+        if self.is_match(Token::Decl) {
+            self.normal_declaration();
+        } else if self.is_match(Token::DeclShort) {
+            self.short_declaration()
+        } else {
+            self.statement();
+        }
+
+        if self.has_error {
+            self.synchronize();
+        }
+    }
+    fn short_declaration(&mut self) {
+        todo!()
+    }
+    fn normal_declaration(&mut self) {
+        normal_declaration(self, self.buf)
     }
     fn statement(&mut self) {
         let current = self.current.as_ref().unwrap().get_value().clone();
@@ -71,24 +90,27 @@ impl<'a> Parser<'a> {
     fn end_compiler(&mut self) {
         self.emit_return();
     }
+    fn synchronize(&mut self) {
+        unimplemented!()
+    }
     pub fn emit_u8(&mut self, byte: u8) {
         let line_number = self.previous().get_line();
         self.current_chunk_mut().add_u8(byte, line_number);
     }
-    fn emit_u32(&mut self, byte: u32) {
+    pub fn emit_u32(&mut self, byte: u32) {
         let line_number = self.previous().get_line();
         self.current_chunk_mut().add_u32(byte, line_number);
     }
     fn emit_return(&mut self) {
         self.emit_u8(opcode::RETURN);
     }
-    fn emit_constant(&mut self, value: Value) {
+    pub fn emit_constant(&mut self, value: Value) {
         self.emit_u8(opcode::CONSTANT);
         if let Some(num) = self.make_constant(value) {
             self.emit_u32(num);
         }
     }
-    fn make_constant(&mut self, value: Value) -> Option<u32> {
+    pub fn make_constant(&mut self, value: Value) -> Option<u32> {
         let constant = self.current_chunk_mut().add_constant(value);
 
         match u32::try_from(constant) {
@@ -115,7 +137,7 @@ impl<'a> Parser<'a> {
 
         self.current = Some(token);
     }
-    fn consume(&mut self, token: Token, msg: &str) {
+    pub fn consume(&mut self, token: Token, msg: &str) {
         if self.is_kind_of(self.current.as_ref().unwrap(), token) {
             self.advance();
             return;
@@ -155,7 +177,7 @@ impl<'a> Parser<'a> {
     fn is_kind_of(&self, t: &WithSpan<Token>, target: Token) -> bool {
         *t.get_value() == target
     }
-    fn pick_str(&self, token: &WithSpan<Token>) -> &str {
+    pub fn pick_str(&self, token: &WithSpan<Token>) -> &str {
         let start = token.get_start();
         let end = token.get_end();
 
@@ -174,7 +196,7 @@ impl<'a> Parser<'a> {
             None => self.error("not a valid number"),
         }
     }
-    fn str_to_Value(&mut self) -> Value {
+    pub fn str_to_Value(&mut self) -> Value {
         let start = self.previous().get_start();
         let end = self.previous().get_end();
         let s = &self.buf[start..end];

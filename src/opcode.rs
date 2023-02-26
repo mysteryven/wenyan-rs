@@ -15,3 +15,4 @@ pub const BANG_GREATER: u8 = 13;
 pub const BANG_LESS: u8 = 14;
 pub const GREATER: u8 = 15;
 pub const LESS: u8 = 16;
+pub const DEFINE_GLOBAL: u8 = 17;

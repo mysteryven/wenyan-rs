@@ -1,4 +1,10 @@
-use crate::{compiler::Parser, opcode, tokenize::token::Token};
+use crate::{
+    compiler::Parser,
+    convert::hanzi2num::{self, hanzi2num},
+    opcode,
+    tokenize::token::Token,
+    value::Value,
+};
 
 pub fn unary_statement(parser: &mut Parser, token: &Token) {
     parser.advance();
@@ -73,4 +79,52 @@ pub fn binary_statement(parser: &mut Parser, token: &Token) {
     .map(|op_code| parser.emit_u8(op_code));
 
     parser.emit_u8(op_code.unwrap());
+}
+
+pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
+    parser.advance();
+    let start = parser.previous().get_start();
+    let end = parser.previous().get_end();
+    let num = match hanzi2num(&buf[start..end]).map(|s| s.parse::<f64>()) {
+        Some(res) => match res {
+            Ok(value) => Some(value as u8),
+            Err(_) => None,
+        },
+        None => None,
+    };
+
+    // skip strict type judgment for now
+    parser.advance();
+
+    if let Some(num) = num {
+        for _ in 0..num {
+            parser.consume(Token::Is, "expect '曰' in declaration.");
+            parser.expression()
+        }
+
+        let mut offset = (num - 1) as u8;
+        while parser.is_match(Token::NameIs) {
+            let global = parse_variable(parser, "Expect variable name.");
+            if let Some(global) = global {
+                parser.emit_u8(opcode::DEFINE_GLOBAL);
+                parser.emit_u32(global);
+                parser.emit_u8(offset);
+                offset -= 1;
+            }
+        }
+    } else {
+        parser.error("expect a number in declaration.");
+    }
+}
+
+fn parse_variable(parser: &mut Parser, error: &str) -> Option<u32> {
+    parser.consume(Token::Identifier, error);
+
+    identifier_constant(parser)
+}
+
+fn identifier_constant(parser: &mut Parser) -> Option<u32> {
+    let value = parser.str_to_Value();
+
+    parser.make_constant(value)
 }

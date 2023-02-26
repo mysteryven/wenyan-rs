@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct StrId(u32);
+pub struct StrId(pub u32);
 
 pub struct Interner {
     map: HashMap<&'static str, (String, StrId)>,

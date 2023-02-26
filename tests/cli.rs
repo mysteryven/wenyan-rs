@@ -45,3 +45,11 @@ pub fn test_binary_if_statement() -> TestResult {
         "tests/expected/binary-if-statement.out.wy",
     )
 }
+
+#[test]
+pub fn test_declare_statement() -> TestResult {
+    run(
+        "tests/inputs/declare-statement.wy",
+        "tests/expected/declare-statement.out.wy",
+    )
+}

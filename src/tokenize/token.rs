@@ -3,6 +3,7 @@ use serde::Serialize;
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub enum Token {
     Decl,
+    DeclShort,
     Define,
 
     Type,
@@ -13,7 +14,8 @@ pub enum Token {
     False,
     Identifier,
 
-    Is, // 曰
+    Is,     // 曰
+    NameIs, // 名之曰
 
     Print, // 書之
 

@@ -5,7 +5,7 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
 
     key_defines.push(("吾有", Token::Decl));
     key_defines.push(("今有", Token::Decl));
-    key_defines.push(("有", Token::Decl));
+    key_defines.push(("有", Token::DeclShort));
     key_defines.push(("數", Token::Type));
     key_defines.push(("言", Token::Type));
     key_defines.push(("書之", Token::Print));
