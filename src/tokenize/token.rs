@@ -39,6 +39,12 @@ pub enum Token {
     BangGreater,
     BangLess,
 
+    AssignFrom, //  '昔之'
+    AssignTo,   // 今
+
+    Conjunction, // 者
+    Sure,        // 是矣
+
     Empty,
     Eof,
     Error(String),

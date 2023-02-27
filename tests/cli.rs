@@ -53,3 +53,19 @@ pub fn test_declare_statement() -> TestResult {
         "tests/expected/declare-statement.out.wy",
     )
 }
+
+#[test]
+pub fn test_define_statement() -> TestResult {
+    run(
+        "tests/inputs/define-statement.wy",
+        "tests/expected/define-statement.out.wy",
+    )
+}
+
+#[test]
+pub fn test_assign_statement() -> TestResult {
+    run(
+        "tests/inputs/assign-statement.wy",
+        "tests/expected/assign-statement.out.wy",
+    )
+}

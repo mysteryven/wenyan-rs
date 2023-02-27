@@ -138,3 +138,15 @@ fn parse_variable(parser: &mut Parser, error: &str) -> Option<u32> {
 
     parser.identifier_constant()
 }
+
+pub fn assign_statement<'a>(parser: &'a mut Parser) {
+    parser.advance(); // skip '昔之'
+    parser.advance(); // skip 'variable name'
+    let arg = parser.identifier_constant().unwrap();
+    parser.consume(Token::Conjunction, "expect '者' in assign statement");
+    parser.consume(Token::AssignTo, "expect '今' in assign statement.");
+    parser.expression();
+    parser.consume(Token::Sure, "expect '是矣' in assign statement.");
+    parser.emit_u8(opcode::SET_GLOBAL);
+    parser.emit_u32(arg);
+}

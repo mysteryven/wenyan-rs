@@ -158,6 +158,17 @@ impl<'a> VM<'a> {
                         return InterpretStatus::RuntimeError;
                     }
                 }
+                opcode::SET_GLOBAL => {
+                    let str_id = self.read_str().expect("a valid str id");
+                    let str = self.runtime.interner().lookup(str_id);
+                    let value = self.stack.pop();
+                    if let Some(value) = value {
+                        self.globals.insert(str.to_owned(), value);
+                    } else {
+                        self.runtime_error(format!("undefined variable {}", str).as_str());
+                        return InterpretStatus::RuntimeError;
+                    }
+                }
                 _ => {}
             }
         }

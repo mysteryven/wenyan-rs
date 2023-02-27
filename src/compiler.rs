@@ -4,8 +4,8 @@ use crate::{
     interpreter::Runtime,
     opcode,
     statements::{
-        binary_if_statement, binary_statement, expression_statement, normal_declaration,
-        print_statement, unary_statement,
+        assign_statement, binary_if_statement, binary_statement, expression_statement,
+        normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -84,6 +84,7 @@ impl<'a> Parser<'a> {
             | Token::BangLess
             | Token::Less
             | Token::Greater => binary_if_statement(self, &current),
+            Token::AssignFrom => assign_statement(self),
             _ => expression_statement(self),
         }
     }

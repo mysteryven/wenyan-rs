@@ -56,5 +56,8 @@ fn main() {
 #[test]
 
 fn run() {
-    interpret("吾有一數曰五名之曰「甲」「甲」", VMMode::Debug);
+    interpret(
+        "吾有二數曰五曰六名之曰「甲」名之曰「乙」加「甲」以「乙」書之",
+        VMMode::Debug,
+    );
 }
