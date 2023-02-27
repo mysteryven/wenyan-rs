@@ -196,7 +196,7 @@ impl<'a> Parser<'a> {
             None => self.error("not a valid number"),
         }
     }
-    pub fn str_to_Value(&mut self) -> Value {
+    pub fn str_to_value(&mut self) -> Value {
         let start = self.previous().get_start();
         let end = self.previous().get_end();
         let s = &self.buf[start..end];
@@ -209,7 +209,7 @@ impl<'a> Parser<'a> {
             Token::True => self.emit_u8(opcode::TRUE),
             Token::False => self.emit_u8(opcode::FALSE),
             Token::String => {
-                let value = self.str_to_Value();
+                let value = self.str_to_value();
                 self.emit_constant(value)
             }
             _ => self.error("Expect expression"),

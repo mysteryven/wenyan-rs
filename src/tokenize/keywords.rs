@@ -9,7 +9,7 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("數", Token::Type));
     key_defines.push(("言", Token::Type));
     key_defines.push(("書之", Token::Print));
-    key_defines.push(("名之", Token::Define));
+    key_defines.push(("名之曰", Token::NameIs));
     key_defines.push(("曰", Token::Is));
 
     key_defines.push(("陰", Token::False));

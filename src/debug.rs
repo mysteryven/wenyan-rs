@@ -67,6 +67,11 @@ impl<'a> Debugger<'a> {
             opcode::LESS => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_LESS")
             }
+            opcode::DEFINE_GLOBAL => self.constant_global_variable_instruction(
+                &mut opcode_metadata,
+                offset,
+                "OP_DEFINE_GLOBAL",
+            ),
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());
@@ -96,5 +101,20 @@ impl<'a> Debugger<'a> {
         print!(" {:08} {:?}", constant, value);
 
         offset + 5
+    }
+
+    pub fn constant_global_variable_instruction(
+        &self,
+        _line: &mut String,
+        offset: usize,
+        name: &str,
+    ) -> usize {
+        print!(" {:<20}", name);
+        let constant = self.chunk.get_u32(offset + 1);
+        let distance = self.chunk.get_u8(offset + 5);
+        let value = self.chunk.constants().get(constant as usize).unwrap();
+        print!(" {:08} {:?} peek({})", constant, value, distance);
+
+        offset + 6
     }
 }

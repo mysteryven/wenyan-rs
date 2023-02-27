@@ -109,7 +109,11 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
                 parser.emit_u8(opcode::DEFINE_GLOBAL);
                 parser.emit_u32(global);
                 parser.emit_u8(offset);
-                offset -= 1;
+                if offset > 0 {
+                    offset -= 1;
+                } else {
+                    break;
+                }
             }
         }
     } else {
@@ -124,7 +128,7 @@ fn parse_variable(parser: &mut Parser, error: &str) -> Option<u32> {
 }
 
 fn identifier_constant(parser: &mut Parser) -> Option<u32> {
-    let value = parser.str_to_Value();
+    let value = parser.str_to_value();
 
     parser.make_constant(value)
 }
