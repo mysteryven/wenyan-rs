@@ -110,9 +110,13 @@ impl<'a> Parser<'a> {
             self.emit_u32(num);
         }
     }
+    pub fn identifier_constant(self: &mut Self) -> Option<u32> {
+        let value = self.str_to_value();
+
+        self.make_constant(value)
+    }
     pub fn make_constant(&mut self, value: Value) -> Option<u32> {
         let constant = self.current_chunk_mut().add_constant(value);
-
         match u32::try_from(constant) {
             Ok(num) => Some(num),
             Err(_) => {
@@ -183,6 +187,12 @@ impl<'a> Parser<'a> {
 
         &self.buf[start..end]
     }
+    pub fn str_to_value(&mut self) -> Value {
+        let start = self.previous().get_start();
+        let end = self.previous().get_end();
+        let s = &self.buf[start..end];
+        Value::String(self.runtime.interner_mut().intern(s))
+    }
     fn number(&mut self) {
         let s = self.pick_str(&self.previous());
         let num_str = hanzi2num(s);
@@ -196,11 +206,14 @@ impl<'a> Parser<'a> {
             None => self.error("not a valid number"),
         }
     }
-    pub fn str_to_value(&mut self) -> Value {
-        let start = self.previous().get_start();
-        let end = self.previous().get_end();
-        let s = &self.buf[start..end];
-        Value::String(self.runtime.interner_mut().intern(s))
+    pub fn variable(&mut self) {
+        self.named_variable();
+    }
+    pub fn named_variable(&mut self) {
+        let arg = self.identifier_constant().unwrap();
+
+        self.emit_u8(opcode::GET_GLOBAL);
+        self.emit_u32(arg);
     }
     pub fn expression(&mut self) {
         self.advance();
@@ -212,6 +225,7 @@ impl<'a> Parser<'a> {
                 let value = self.str_to_value();
                 self.emit_constant(value)
             }
+            Token::Identifier => self.variable(),
             _ => self.error("Expect expression"),
         }
     }

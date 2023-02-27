@@ -42,6 +42,11 @@ impl<'a> VM<'a> {
     }
     pub fn show_stack(&self) {
         println!("  ");
+        println!("  ");
+        print!("Stack->");
+        if self.stack.len() == 0 {
+            print!("[]")
+        }
         for val in self.stack.iter() {
             print!("[{:?}]", val);
         }
@@ -51,6 +56,12 @@ impl<'a> VM<'a> {
         let debugger = Debugger::new(self.chunk);
         let mut result = vec![];
 
+        if mode == VMMode::Debug {
+            println!("---");
+            println!("Debug Info start");
+            println!("---");
+        }
+
         loop {
             if mode == VMMode::Debug {
                 self.show_stack();
@@ -58,6 +69,14 @@ impl<'a> VM<'a> {
             }
             let byte = self.read_byte();
             match byte {
+                opcode::RETURN => {
+                    if mode == VMMode::Debug {
+                        println!("---");
+                        println!("Debug Info end");
+                        println!("---");
+                    }
+                    return InterpretStatus::Ok;
+                }
                 opcode::CONSTANT => {
                     if let Some(value) = self.read_constant().map(|x| x.clone()) {
                         self.stack.push(value);
@@ -73,10 +92,12 @@ impl<'a> VM<'a> {
                     println!("{}", vec_str.join(" "));
                     self.stack.clear();
                 }
+                opcode::POP => {
+                    self.stack.pop();
+                }
                 opcode::ADD => self.binary_op("+"),
                 opcode::SUBTRACT => self.binary_op("-"),
                 opcode::MULTIPLY => self.binary_op("*"),
-                opcode::RETURN => return InterpretStatus::Ok,
                 opcode::INVERT => {
                     let val = match self.stack.pop() {
                         Some(Value::Bool(false)) => Some(true),
@@ -127,6 +148,16 @@ impl<'a> VM<'a> {
                         self.globals.insert(str, value.clone());
                     }
                 }
+                opcode::GET_GLOBAL => {
+                    let str_id = self.read_str().expect("a valid str id");
+                    let str = self.runtime.interner().lookup(str_id);
+                    if let Some(value) = self.globals.get(str) {
+                        self.stack.push(value.clone());
+                    } else {
+                        self.runtime_error(format!("undefined variable {}", str).as_str());
+                        return InterpretStatus::RuntimeError;
+                    }
+                }
                 _ => {}
             }
         }
@@ -149,6 +180,17 @@ impl<'a> VM<'a> {
 
         match idx {
             Some(Value::String(i)) => Some(self.runtime.interner().lookup(i.clone()).to_owned()),
+            _ => {
+                self.runtime_error("not find this string in interner.");
+                None
+            }
+        }
+    }
+    pub fn read_str(&mut self) -> Option<StrId> {
+        let idx = self.read_constant().map(|x| x.clone());
+
+        match idx {
+            Some(Value::String(i)) => Some(i),
             _ => {
                 self.runtime_error("not find this string in interner.");
                 None

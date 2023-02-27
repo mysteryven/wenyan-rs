@@ -103,7 +103,9 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
         }
 
         let mut offset = (num - 1) as u8;
+        let mut has_define_statement = false;
         while parser.is_match(Token::NameIs) {
+            has_define_statement = true;
             let global = parse_variable(parser, "Expect variable name.");
             if let Some(global) = global {
                 parser.emit_u8(opcode::DEFINE_GLOBAL);
@@ -116,6 +118,16 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
                 }
             }
         }
+
+        if has_define_statement {
+            if offset != 0 {
+                parser.error("expect named all variable you declared.")
+            } else {
+                for _ in 0..num {
+                    parser.emit_u8(opcode::POP);
+                }
+            }
+        }
     } else {
         parser.error("expect a number in declaration.");
     }
@@ -124,11 +136,5 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
 fn parse_variable(parser: &mut Parser, error: &str) -> Option<u32> {
     parser.consume(Token::Identifier, error);
 
-    identifier_constant(parser)
-}
-
-fn identifier_constant(parser: &mut Parser) -> Option<u32> {
-    let value = parser.str_to_value();
-
-    parser.make_constant(value)
+    parser.identifier_constant()
 }

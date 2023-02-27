@@ -16,3 +16,6 @@ pub const BANG_LESS: u8 = 14;
 pub const GREATER: u8 = 15;
 pub const LESS: u8 = 16;
 pub const DEFINE_GLOBAL: u8 = 17;
+pub const GET_GLOBAL: u8 = 18;
+pub const SET_GLOBAL: u8 = 19;
+pub const POP: u8 = 20;

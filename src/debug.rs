@@ -72,6 +72,9 @@ impl<'a> Debugger<'a> {
                 offset,
                 "OP_DEFINE_GLOBAL",
             ),
+            opcode::GET_GLOBAL => {
+                self.constant_instruction(&mut opcode_metadata, offset, "OP_GET_GLOBAL")
+            }
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());

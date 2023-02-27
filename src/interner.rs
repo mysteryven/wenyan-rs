@@ -33,7 +33,9 @@ impl Interner {
     }
     pub fn lookup(&self, str_id: StrId) -> &str {
         let id = str_id.0;
-        self.id_to_str.get(&id).expect("has a valid str")
+        self.id_to_str
+            .get(&id)
+            .expect(format!("{} not a valid str, lookup string failed.", str_id.0).as_str())
     }
     pub fn free(&mut self) {
         self.id_to_str.clear();
