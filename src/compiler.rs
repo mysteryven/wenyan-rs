@@ -4,12 +4,57 @@ use crate::{
     interpreter::Runtime,
     opcode,
     statements::{
-        assign_statement, binary_if_statement, binary_statement, expression_statement,
-        normal_declaration, print_statement, unary_statement,
+        assign_statement, binary_if_statement, binary_statement, block_statement,
+        expression_statement, normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
 };
+
+pub struct Local {
+    token: Token,
+    depth: Depth,
+}
+
+type Depth = i8;
+
+pub struct Compiler {
+    locals: Vec<Local>,
+    scope_depth: Depth,
+}
+
+impl Compiler {
+    pub fn new() -> Box<Self> {
+        Box::new(Self {
+            locals: vec![],
+            scope_depth: 0,
+        })
+    }
+    pub fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+    pub fn locals_mut(&mut self) -> &mut Vec<Local> {
+        &mut self.locals
+    }
+    pub fn scope_depth(&self) -> Depth {
+        self.scope_depth
+    }
+    pub fn add_local(&mut self, token: Token) {
+        self.locals.push(Local {
+            token,
+            depth: self.scope_depth,
+        });
+    }
+    pub fn resolve_local(&mut self, token: Token) -> Option<u32> {
+        for (i, local) in self.locals.iter().enumerate().rev() {
+            if local.token == token {
+                return Some(i as u32);
+            }
+        }
+
+        None
+    }
+}
 
 pub struct Parser<'a> {
     scanner: Scanner,
@@ -19,6 +64,7 @@ pub struct Parser<'a> {
     previous: Option<WithSpan<Token>>,
     has_error: bool,
     runtime: &'a mut Runtime,
+    current_compiler: Box<Compiler>,
 }
 
 impl<'a> Parser<'a> {
@@ -33,6 +79,7 @@ impl<'a> Parser<'a> {
             previous: None,
             has_error: false,
             runtime,
+            current_compiler: Compiler::new(),
         }
     }
     pub fn current_chunk_mut(&mut self) -> &mut Chunk {
@@ -52,7 +99,7 @@ impl<'a> Parser<'a> {
         self.end_compiler();
         return self.has_error;
     }
-    fn declaration(&mut self) {
+    pub fn declaration(&mut self) {
         if self.is_match(Token::Decl) {
             self.normal_declaration();
         } else if self.is_match(Token::DeclShort) {
@@ -85,6 +132,7 @@ impl<'a> Parser<'a> {
             | Token::Less
             | Token::Greater => binary_if_statement(self, &current),
             Token::AssignFrom => assign_statement(self),
+            Token::LeftBlock => block_statement(self),
             _ => expression_statement(self),
         }
     }
@@ -160,6 +208,9 @@ impl<'a> Parser<'a> {
             false => false,
         }
     }
+    pub fn check(&self, token: Token) -> bool {
+        self.is_kind_of(self.current.as_ref().unwrap(), token)
+    }
 
     pub fn error_at_current(&mut self, msg: &str) {
         self.has_error = true;
@@ -210,12 +261,21 @@ impl<'a> Parser<'a> {
     pub fn variable(&mut self) {
         self.named_variable();
     }
-    pub fn named_variable(&mut self) {
-        let arg = self.identifier_constant().unwrap();
 
-        self.emit_u8(opcode::GET_GLOBAL);
-        self.emit_u32(arg);
+    pub fn named_variable(&mut self) {
+        let arg = self
+            .current_compiler
+            .resolve_local(self.previous().get_value().clone());
+
+        let (x, y) = match arg {
+            Some(arg) => (opcode::GET_LOCAL, arg),
+            None => (opcode::GET_GLOBAL, self.identifier_constant().unwrap()),
+        };
+
+        self.emit_u8(x);
+        self.emit_u32(y);
     }
+
     pub fn expression(&mut self) {
         self.advance();
         match *self.previous().get_value() {
@@ -229,5 +289,27 @@ impl<'a> Parser<'a> {
             Token::Identifier => self.variable(),
             _ => self.error("Expect expression"),
         }
+    }
+    pub fn begin_scope(&mut self) {
+        self.current_compiler.begin_scope()
+    }
+    pub fn get_scope(&mut self) -> i8 {
+        self.current_compiler.scope_depth()
+    }
+    pub fn resolve_local(&mut self, name: Token) -> Option<u32> {
+        self.current_compiler.resolve_local(name)
+    }
+    pub fn end_scope(&mut self) {
+        self.current_compiler.scope_depth -= 1;
+        while !self.current_compiler.locals.is_empty()
+            && self.current_compiler.locals.last().unwrap().depth
+                > self.current_compiler.scope_depth
+        {
+            self.current_compiler.locals.pop();
+            self.emit_u8(opcode::POP_LOCAL)
+        }
+    }
+    pub fn add_local(&mut self, token: Token) {
+        self.current_compiler.add_local(token);
     }
 }

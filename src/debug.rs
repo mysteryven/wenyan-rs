@@ -81,6 +81,11 @@ impl<'a> Debugger<'a> {
             opcode::PRINT => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Print")
             }
+            opcode::DEFINE_LOCAL => self.constant_local_variable_instruction(
+                &mut opcode_metadata,
+                offset,
+                "OP_Define_Local",
+            ),
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());
@@ -110,6 +115,19 @@ impl<'a> Debugger<'a> {
         print!(" {:08} {:?}", constant, value);
 
         offset + 5
+    }
+
+    pub fn constant_local_variable_instruction(
+        &self,
+        _line: &mut String,
+        offset: usize,
+        name: &str,
+    ) -> usize {
+        print!(" {:<20}", name);
+        let constant = self.chunk.get_8(offset + 1);
+        print!(" {:08}", constant);
+
+        offset + 2
     }
 
     pub fn constant_global_variable_instruction(

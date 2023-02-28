@@ -20,6 +20,7 @@ pub struct VM<'a> {
     chunk: &'a Chunk,
     ip: *const u8,
     stack: Vec<Value>,
+    local_stack: Vec<Value>,
     runtime: &'a mut Runtime,
     globals: HashMap<String, Value>,
 }
@@ -30,6 +31,7 @@ impl<'a> VM<'a> {
             chunk,
             ip,
             stack: vec![],
+            local_stack: vec![],
             runtime,
             globals: HashMap::new(),
         }
@@ -39,6 +41,9 @@ impl<'a> VM<'a> {
     }
     pub fn peek(&self, distance: usize) -> Option<&Value> {
         self.stack.get(self.stack.len() - 1 - distance)
+    }
+    pub fn peek_local(&self, distance: usize) -> Option<&Value> {
+        self.local_stack.get(self.local_stack.len() - 1 - distance)
     }
     pub fn show_stack(&self) {
         println!("  ");
@@ -168,6 +173,29 @@ impl<'a> VM<'a> {
                         self.runtime_error(format!("undefined variable {}", str).as_str());
                         return InterpretStatus::RuntimeError;
                     }
+                }
+                opcode::DEFINE_LOCAL => {
+                    let offset = self.read_byte() as usize;
+                    let value = self.peek(offset);
+                    if let Some(value) = value {
+                        self.local_stack.push(value.clone());
+                    }
+                }
+                opcode::GET_LOCAL => {
+                    let offset = self.read_byte() as usize;
+                    let value = self.peek_local(offset);
+                    if let Some(value) = value {
+                        self.stack.push(value.clone());
+                    }
+                }
+                opcode::SET_LOCAL => {
+                    let offset = self.read_byte() as usize;
+                    self.local_stack.get_mut(offset).map(|x| {
+                        let value = self.stack.pop();
+                        if let Some(value) = value {
+                            *x = value;
+                        }
+                    });
                 }
                 _ => {}
             }

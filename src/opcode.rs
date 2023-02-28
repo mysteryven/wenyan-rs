@@ -19,3 +19,7 @@ pub const DEFINE_GLOBAL: u8 = 17;
 pub const GET_GLOBAL: u8 = 18;
 pub const SET_GLOBAL: u8 = 19;
 pub const POP: u8 = 20;
+pub const DEFINE_LOCAL: u8 = 21;
+pub const GET_LOCAL: u8 = 22;
+pub const SET_LOCAL: u8 = 23;
+pub const POP_LOCAL: u8 = 24;

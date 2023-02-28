@@ -105,6 +105,7 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
         let mut offset = (num - 1) as u8;
         let mut has_define_statement = false;
         while parser.is_match(Token::NameIs) {
+            // 名之曰
             has_define_statement = true;
             let global = parse_variable(parser, "Expect variable name.");
             if let Some(global) = global {
@@ -116,6 +117,9 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
                 } else {
                     break;
                 }
+            } else {
+                parser.emit_u8(opcode::DEFINE_LOCAL);
+                parser.emit_u8(offset);
             }
         }
 
@@ -135,18 +139,49 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
 
 fn parse_variable(parser: &mut Parser, error: &str) -> Option<u32> {
     parser.consume(Token::Identifier, error);
+    declare_variable(parser);
+    if parser.get_scope() > 0 {
+        return None;
+    }
 
     parser.identifier_constant()
+}
+
+fn declare_variable(parser: &mut Parser) {
+    if parser.get_scope() == 0 {
+        return;
+    }
+
+    let token = parser.previous().get_value().clone();
+    parser.add_local(token);
 }
 
 pub fn assign_statement<'a>(parser: &'a mut Parser) {
     parser.advance(); // skip '昔之'
     parser.advance(); // skip 'variable name'
-    let arg = parser.identifier_constant().unwrap();
+
+    let arg = parser.resolve_local(parser.previous().get_value().clone());
+
+    let (x, y) = match arg {
+        Some(arg) => (opcode::SET_LOCAL, arg),
+        None => (opcode::SET_GLOBAL, parser.identifier_constant().unwrap()),
+    };
+
     parser.consume(Token::Conjunction, "expect '者' in assign statement");
     parser.consume(Token::AssignTo, "expect '今' in assign statement.");
     parser.expression();
     parser.consume(Token::Sure, "expect '是矣' in assign statement.");
-    parser.emit_u8(opcode::SET_GLOBAL);
-    parser.emit_u32(arg);
+    parser.emit_u8(x);
+    parser.emit_u32(y);
+}
+
+pub fn block_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.begin_scope();
+
+    while !parser.check(Token::RightBlock) && !parser.check(Token::Eof) {
+        parser.declaration()
+    }
+
+    parser.end_scope();
 }

@@ -48,4 +48,6 @@ pub enum Token {
     Empty,
     Eof,
     Error(String),
+    LeftBlock,
+    RightBlock,
 }
