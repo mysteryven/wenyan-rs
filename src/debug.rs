@@ -79,13 +79,30 @@ impl<'a> Debugger<'a> {
                 self.constant_instruction(&mut opcode_metadata, offset, "OP_SET_GLOBAL")
             }
             opcode::PRINT => {
-                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_Print")
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_PRINT")
             }
             opcode::DEFINE_LOCAL => self.constant_local_variable_instruction(
                 &mut opcode_metadata,
                 offset,
-                "OP_Define_Local",
+                "OP_DEFINE_LOCAL",
             ),
+            opcode::GET_LOCAL => self.constant_local_variable_instruction(
+                &mut opcode_metadata,
+                offset,
+                "OP_GET_LOCAL",
+            ),
+            opcode::SET_LOCAL => self.constant_local_variable_instruction(
+                &mut opcode_metadata,
+                offset,
+                "OP_SET_LOCAL",
+            ),
+            opcode::POP => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_POP")
+            }
+            opcode::POP_LOCAL => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_POP_LOCAL")
+            }
+
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());
@@ -124,7 +141,7 @@ impl<'a> Debugger<'a> {
         name: &str,
     ) -> usize {
         print!(" {:<20}", name);
-        let constant = self.chunk.get_8(offset + 1);
+        let constant = self.chunk.get_u8(offset + 1);
         print!(" {:08}", constant);
 
         offset + 2

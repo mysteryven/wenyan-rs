@@ -69,3 +69,11 @@ pub fn test_assign_statement() -> TestResult {
         "tests/expected/assign-statement.out.wy",
     )
 }
+
+#[test]
+pub fn test_local_define_statement() -> TestResult {
+    run(
+        "tests/inputs/local-define-statement.wy",
+        "tests/expected/local-define-statement.out.wy",
+    )
+}

@@ -5,7 +5,8 @@ use crate::{
     opcode,
     statements::{
         assign_statement, binary_if_statement, binary_statement, block_statement,
-        expression_statement, normal_declaration, print_statement, unary_statement,
+        expression_statement, name_is_statement, normal_declaration, print_statement,
+        unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -133,6 +134,7 @@ impl<'a> Parser<'a> {
             | Token::Greater => binary_if_statement(self, &current),
             Token::AssignFrom => assign_statement(self),
             Token::LeftBlock => block_statement(self),
+            Token::NameIs => name_is_statement(self),
             _ => expression_statement(self),
         }
     }

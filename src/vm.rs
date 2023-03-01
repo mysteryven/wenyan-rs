@@ -55,6 +55,15 @@ impl<'a> VM<'a> {
         for val in self.stack.iter() {
             print!("[{:?}]", val);
         }
+
+        println!("  ");
+        print!("LocalStack->");
+        if self.local_stack.len() == 0 {
+            print!("[]")
+        }
+        for val in self.local_stack.iter() {
+            print!("[{:?}]", val);
+        }
         println!("  ")
     }
     pub fn run(&mut self, mode: VMMode) -> InterpretStatus {
@@ -196,6 +205,9 @@ impl<'a> VM<'a> {
                             *x = value;
                         }
                     });
+                }
+                opcode::POP_LOCAL => {
+                    self.local_stack.pop();
                 }
                 _ => {}
             }

@@ -183,5 +183,24 @@ pub fn block_statement<'a>(parser: &'a mut Parser) {
         parser.declaration()
     }
 
+    parser.consume(
+        Token::RightBlock,
+        "expect right block '}' in block statement.",
+    );
     parser.end_scope();
+}
+
+pub fn name_is_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    let global = parse_variable(parser, "Expect variable name.");
+    if let Some(global) = global {
+        parser.emit_u8(opcode::DEFINE_GLOBAL);
+        parser.emit_u32(global);
+        parser.emit_u8(0);
+        // pick top of stack and pop top of stack immediately,
+        // this is different from normal declaration, because it always choose top of stack.
+        parser.emit_u8(opcode::POP);
+    } else {
+        parser.emit_u8(opcode::DEFINE_LOCAL);
+    }
 }
