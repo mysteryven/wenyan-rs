@@ -2,9 +2,9 @@
 
 A bytecode interpreter for [Wenyan-lang](https://github.com/wenyan-lang/wenyan).
 
-## Try it online
+## Try it Online
 
-[playground](./)
+[Playground](./)
 
 ## Install
 
@@ -14,16 +14,29 @@ npm install wenyan-rs
 
 ## Differences
 
-The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, but I not realized those implicit features. I added some checks in the complication stage: 
+The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, but some of my rules may be stricter for ease of implementation.
 
-Must use `「` for variable and `「「` for string. The Online IDE not force it while the handbook has this rule.
+0. Variables need to be wrapped in single quotes 
 
-Has static type check. For example, we can't assign a number to `言`(the string type in wenyan language). The Online IDE not check this rule, I think it makes sense to throw a error before run it.
+```bash
+吾有一數曰五名之曰「甲」 // ✅
+吾有一數曰五名之曰甲 // ❎
+```
+
+1. Disable partially define variables. 
+
+```bash
+吾有二數曰五曰六名之曰「甲」名之曰「乙」 // ✅
+吾有二數曰五曰六名之曰「甲」 // ❎
+吾有二數曰五曰六  // ✅
+```
+
+2. Has implicit block scope.
 
 
 ## Future Work
 
-There are still some features not implemented yet, and they are listed in [this issue](./).
+There are still some features not implemented yet, part of them are listed in [this issue](./).
 
 ## Credits
 
