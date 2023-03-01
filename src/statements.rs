@@ -27,9 +27,23 @@ pub fn print_statement(parser: &mut Parser) {
 
 pub fn expression_statement(parser: &mut Parser) {
     parser.expression();
+
+    let current = parser.current().get_value();
+
+    match current {
+        Token::BangEqual
+        | Token::EqualEqual
+        | Token::BangGreater
+        | Token::BangLess
+        | Token::Less
+        | Token::Greater => binary_if_expression(parser),
+        _ => {}
+    }
 }
 
-pub fn binary_if_statement(parser: &mut Parser, token: &Token) {
+pub fn binary_if_expression(parser: &mut Parser) {
+    let token = parser.current().get_value().clone();
+
     let op_code = match token {
         Token::BangEqual | Token::EqualEqual => opcode::EQUAL_EQUAL,
         Token::Greater | Token::BangGreater => opcode::GREATER,
@@ -175,18 +189,24 @@ pub fn assign_statement<'a>(parser: &'a mut Parser) {
     parser.emit_u32(y);
 }
 
-pub fn block_statement<'a, const N: usize>(parser: &'a mut Parser, stop_tokens: [Token; N]) {
+pub fn block_statement<'a, const N: usize>(parser: &'a mut Parser, stop_before_tokens: [Token; N]) {
     parser.begin_scope();
-    let preset_stop_tokens = [Token::YunYun, Token::Ye, Token::Eof];
+    let preset_stop_tokens = [Token::YunYun, Token::Ye];
 
-    while !parser.check_vec(&stop_tokens) && !parser.check_vec(&preset_stop_tokens) {
+    while parser.check_not_in_vec(&stop_before_tokens)
+        && parser.check_not_in_vec(&preset_stop_tokens)
+        && !parser.check(Token::Eof)
+    {
         parser.declaration()
     }
 
-    parser.consume(
-        Token::RightBlock,
-        "expect right block '}' in block statement.",
-    );
+    if parser.check_in_vec(&preset_stop_tokens) {
+        parser.advance();
+    } else if parser.check_in_vec(&stop_before_tokens) {
+    } else {
+        parser.error("expect end token in block statement.")
+    }
+
     parser.end_scope();
 }
 
@@ -213,7 +233,8 @@ pub fn if_statement<'a>(parser: &'a mut Parser) {
     parser.emit_u8(opcode::POP);
     block_statement(parser, [Token::Else]);
 
-    if parser.is_match(Token::Else) {
+    if parser.check(Token::Else) {
+        parser.advance();
         let else_jump = parser.emit_jump(opcode::JUMP);
         parser.patch_jump(then_jump);
 

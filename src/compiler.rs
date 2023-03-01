@@ -4,9 +4,8 @@ use crate::{
     interpreter::Runtime,
     opcode,
     statements::{
-        assign_statement, binary_if_statement, binary_statement, block_statement,
-        expression_statement, if_statement, name_is_statement, normal_declaration, print_statement,
-        unary_statement,
+        assign_statement, binary_statement, expression_statement, if_statement, name_is_statement,
+        normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -129,12 +128,7 @@ impl<'a> Parser<'a> {
             Token::Plus | Token::Minus | Token::Star => binary_statement(self, &current),
             Token::Invert => unary_statement(self, &current),
             Token::Print => print_statement(self),
-            Token::BangEqual
-            | Token::EqualEqual
-            | Token::BangGreater
-            | Token::BangLess
-            | Token::Less
-            | Token::Greater => binary_if_statement(self, &current),
+
             Token::AssignFrom => assign_statement(self),
             Token::NameIs => name_is_statement(self),
             Token::If => if_statement(self),
@@ -182,6 +176,9 @@ impl<'a> Parser<'a> {
             }
         }
     }
+    pub fn current(&self) -> &WithSpan<Token> {
+        self.current.as_ref().unwrap()
+    }
 
     pub fn previous(&self) -> &WithSpan<Token> {
         self.previous.as_ref().unwrap()
@@ -220,8 +217,11 @@ impl<'a> Parser<'a> {
         self.is_kind_of(self.current.as_ref().unwrap(), token)
     }
 
-    pub fn check_vec<const N: usize>(&self, tokens: &[Token; N]) -> bool {
-        tokens.iter().all(|t| self.check(t.clone()))
+    pub fn check_not_in_vec(&self, tokens: &[Token]) -> bool {
+        tokens.iter().all(|t| !self.check(t.clone()))
+    }
+    pub fn check_in_vec(&self, tokens: &[Token]) -> bool {
+        tokens.iter().any(|t| self.check(t.clone()))
     }
 
     pub fn error_at_current(&mut self, msg: &str) {
@@ -299,6 +299,7 @@ impl<'a> Parser<'a> {
                 self.emit_constant(value)
             }
             Token::Identifier => self.variable(),
+            Token::Prev => {} // do nothing
             _ => self.error("Expect expression"),
         }
     }

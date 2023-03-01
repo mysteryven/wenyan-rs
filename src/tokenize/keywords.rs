@@ -31,6 +31,7 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("昔之", Token::AssignFrom));
     key_defines.push(("今", Token::AssignTo));
     key_defines.push(("者", Token::Conjunction));
+    key_defines.push(("其", Token::Prev));
     key_defines.push(("是矣", Token::Sure));
 
     key_defines.push(("若", Token::If));

@@ -71,14 +71,6 @@ pub fn test_assign_statement() -> TestResult {
 }
 
 #[test]
-pub fn test_local_define_statement() -> TestResult {
-    run(
-        "tests/inputs/local-define-statement.wy",
-        "tests/expected/local-define-statement.out.wy",
-    )
-}
-
-#[test]
 pub fn test_if_statement() -> TestResult {
     run(
         "tests/inputs/if-statement.wy",

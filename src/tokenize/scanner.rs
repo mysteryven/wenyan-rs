@@ -350,4 +350,9 @@ mod test {
     fn test_assign() {
         generate_tokens_snapshot("昔之「甲」者今一是矣")
     }
+
+    #[test]
+    fn test_if() {
+        generate_tokens_snapshot("若二等於二者加一以五書之云云")
+    }
 }

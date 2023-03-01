@@ -41,6 +41,7 @@ pub enum Token {
 
     AssignFrom, //  '昔之'
     AssignTo,   // 今
+    Prev,       // 其
 
     Conjunction, // 者
     Sure,        // 是矣
