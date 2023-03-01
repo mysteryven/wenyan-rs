@@ -136,7 +136,7 @@ impl<'a> Debugger<'a> {
             _ => jump,
         };
 
-        print!("{:08} -> {}", offset, offset as isize + jump + 5);
+        print!("{:08} -> {:08}", offset, offset as isize + jump + 5);
 
         return offset + 5;
     }

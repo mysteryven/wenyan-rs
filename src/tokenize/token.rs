@@ -4,8 +4,6 @@ use serde::Serialize;
 pub enum Token {
     Decl,
     DeclShort,
-    Define,
-
     Type,
 
     Number,
@@ -51,9 +49,6 @@ pub enum Token {
     If,   // 若
     Else, // 若非
 
-    Empty,
     Eof,
     Error(String),
-    LeftBlock,
-    RightBlock,
 }
