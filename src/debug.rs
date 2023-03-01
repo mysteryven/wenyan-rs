@@ -102,6 +102,8 @@ impl<'a> Debugger<'a> {
             opcode::POP_LOCAL => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_POP_LOCAL")
             }
+            opcode::JUMP_IF_FALSE => self.jump_instruction(1, offset, "OP_JUMP_IF_FALSE"),
+            opcode::JUMP => self.jump_instruction(1, offset, "OP_JUMP"),
 
             _ => {
                 // this is a unknown opcode
@@ -123,6 +125,20 @@ impl<'a> Debugger<'a> {
         print!(" {:<20}", name);
 
         offset + 1
+    }
+
+    pub fn jump_instruction(&self, sign: i8, offset: usize, name: &str) -> usize {
+        print!(" {:<20}", name);
+        let jump = self.chunk.get_u32(offset + 1) as isize;
+        let jump = match sign {
+            1 => jump,
+            -1 => -jump,
+            _ => jump,
+        };
+
+        print!("{:08} -> {}", offset, offset as isize + jump + 5);
+
+        return offset + 5;
     }
 
     pub fn constant_instruction(&self, _line: &mut String, offset: usize, name: &str) -> usize {

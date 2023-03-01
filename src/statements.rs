@@ -175,11 +175,11 @@ pub fn assign_statement<'a>(parser: &'a mut Parser) {
     parser.emit_u32(y);
 }
 
-pub fn block_statement<'a>(parser: &'a mut Parser) {
-    parser.advance();
+pub fn block_statement<'a, const N: usize>(parser: &'a mut Parser, stop_tokens: [Token; N]) {
     parser.begin_scope();
+    let preset_stop_tokens = [Token::YunYun, Token::Ye, Token::Eof];
 
-    while !parser.check(Token::RightBlock) && !parser.check(Token::Eof) {
+    while !parser.check_vec(&stop_tokens) && !parser.check_vec(&preset_stop_tokens) {
         parser.declaration()
     }
 
@@ -202,5 +202,25 @@ pub fn name_is_statement<'a>(parser: &'a mut Parser) {
         parser.emit_u8(opcode::POP);
     } else {
         parser.emit_u8(opcode::DEFINE_LOCAL);
+    }
+}
+
+pub fn if_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.statement();
+    parser.consume(Token::Conjunction, "expect '者'");
+    let then_jump = parser.emit_jump(opcode::JUMP_IF_FALSE);
+    parser.emit_u8(opcode::POP);
+    block_statement(parser, [Token::Else]);
+
+    if parser.is_match(Token::Else) {
+        let else_jump = parser.emit_jump(opcode::JUMP);
+        parser.patch_jump(then_jump);
+
+        parser.emit_u8(opcode::POP);
+        block_statement(parser, []);
+        parser.patch_jump(else_jump);
+    } else {
+        parser.patch_jump(then_jump);
     }
 }

@@ -77,3 +77,11 @@ pub fn test_local_define_statement() -> TestResult {
         "tests/expected/local-define-statement.out.wy",
     )
 }
+
+#[test]
+pub fn test_if_statement() -> TestResult {
+    run(
+        "tests/inputs/if-statement.wy",
+        "tests/expected/if-statement.out.wy",
+    )
+}

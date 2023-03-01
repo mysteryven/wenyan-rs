@@ -5,7 +5,7 @@ use crate::{
     opcode,
     statements::{
         assign_statement, binary_if_statement, binary_statement, block_statement,
-        expression_statement, name_is_statement, normal_declaration, print_statement,
+        expression_statement, if_statement, name_is_statement, normal_declaration, print_statement,
         unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
@@ -83,6 +83,9 @@ impl<'a> Parser<'a> {
             current_compiler: Compiler::new(),
         }
     }
+    pub fn current_chunk(&self) -> &Chunk {
+        self.compiling_chunk
+    }
     pub fn current_chunk_mut(&mut self) -> &mut Chunk {
         self.compiling_chunk
     }
@@ -119,7 +122,7 @@ impl<'a> Parser<'a> {
     fn normal_declaration(&mut self) {
         normal_declaration(self, self.buf)
     }
-    fn statement(&mut self) {
+    pub fn statement(&mut self) {
         let current = self.current.as_ref().unwrap().get_value().clone();
 
         match current {
@@ -133,8 +136,8 @@ impl<'a> Parser<'a> {
             | Token::Less
             | Token::Greater => binary_if_statement(self, &current),
             Token::AssignFrom => assign_statement(self),
-            Token::LeftBlock => block_statement(self),
             Token::NameIs => name_is_statement(self),
+            Token::If => if_statement(self),
             _ => expression_statement(self),
         }
     }
@@ -151,6 +154,9 @@ impl<'a> Parser<'a> {
     pub fn emit_u32(&mut self, byte: u32) {
         let line_number = self.previous().get_line();
         self.current_chunk_mut().add_u32(byte, line_number);
+    }
+    pub fn set_u32(&mut self, index: usize, byte: u32) {
+        self.current_chunk_mut().overwrite_u32(index, byte);
     }
     fn emit_return(&mut self) {
         self.emit_u8(opcode::RETURN);
@@ -212,6 +218,10 @@ impl<'a> Parser<'a> {
     }
     pub fn check(&self, token: Token) -> bool {
         self.is_kind_of(self.current.as_ref().unwrap(), token)
+    }
+
+    pub fn check_vec<const N: usize>(&self, tokens: &[Token; N]) -> bool {
+        tokens.iter().all(|t| self.check(t.clone()))
     }
 
     pub fn error_at_current(&mut self, msg: &str) {
@@ -313,5 +323,23 @@ impl<'a> Parser<'a> {
     }
     pub fn add_local(&mut self, token: Token) {
         self.current_compiler.add_local(token);
+    }
+    pub fn emit_jump(&mut self, opcode: u8) -> usize {
+        self.emit_u8(opcode);
+        self.emit_u32(0);
+        self.current_chunk().len() - 4
+    }
+    pub fn patch_jump(&mut self, patch_index: usize) {
+        let jump = self.current_chunk().len() - patch_index - 4;
+
+        let jump = match u32::try_from(jump) {
+            Ok(jump) => jump,
+            Err(_) => {
+                self.error("Too many jumps in one chunk.");
+                0
+            }
+        };
+
+        self.set_u32(patch_index, jump);
     }
 }

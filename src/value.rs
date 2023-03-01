@@ -22,3 +22,10 @@ pub fn is_less(a: Value, b: Value) -> bool {
         _ => false,
     }
 }
+
+pub fn is_falsy(value: &Value) -> bool {
+    match value {
+        Value::Bool(false) => true,
+        _ => false,
+    }
+}

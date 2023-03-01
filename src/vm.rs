@@ -7,7 +7,7 @@ use crate::{
     interpreter::{InterpretStatus, Runtime},
     memory::free_object,
     opcode,
-    value::{is_less, value_equal, Value},
+    value::{is_falsy, is_less, value_equal, Value},
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -209,6 +209,19 @@ impl<'a> VM<'a> {
                 opcode::POP_LOCAL => {
                     self.local_stack.pop();
                 }
+                opcode::JUMP_IF_FALSE => {
+                    let offset = self.read_u32();
+                    let value = self.stack.last();
+                    if let Some(value) = value {
+                        if is_falsy(value) {
+                            self.skip(offset)
+                        }
+                    }
+                }
+                opcode::JUMP => {
+                    let offset = self.read_u32();
+                    self.skip(offset);
+                }
                 _ => {}
             }
         }
@@ -261,6 +274,11 @@ impl<'a> VM<'a> {
             let value = u32::from_le_bytes(slice.try_into().unwrap());
             self.ip = self.ip.add(4);
             value
+        }
+    }
+    fn skip(&mut self, offset: u32) {
+        unsafe {
+            self.ip = self.ip.add(offset as usize);
         }
     }
     fn format_value(&self, value: &Value) -> String {

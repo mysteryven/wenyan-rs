@@ -23,3 +23,5 @@ pub const DEFINE_LOCAL: u8 = 21;
 pub const GET_LOCAL: u8 = 22;
 pub const SET_LOCAL: u8 = 23;
 pub const POP_LOCAL: u8 = 24;
+pub const JUMP_IF_FALSE: u8 = 25;
+pub const JUMP: u8 = 26;

@@ -44,6 +44,11 @@ pub enum Token {
 
     Conjunction, // 者
     Sure,        // 是矣
+    YunYun,      // 云云
+    Ye,          // 也
+
+    If,   // 若
+    Else, // 若非
 
     Empty,
     Eof,

@@ -1,4 +1,4 @@
-use crate::{value::Value};
+use crate::value::Value;
 
 pub struct Chunk {
     code: Vec<u8>,
@@ -16,6 +16,9 @@ impl Chunk {
     }
     pub fn code(&self) -> &Vec<u8> {
         &self.code
+    }
+    pub fn len(&self) -> usize {
+        self.code.len()
     }
     pub fn constants(&self) -> &Vec<Value> {
         &self.constants
@@ -45,6 +48,13 @@ impl Chunk {
     pub fn get_u32(&self, idx: usize) -> u32 {
         let bytes = unsafe { self.code.get_unchecked(idx..idx + 4) };
         u32::from_le_bytes(bytes.try_into().unwrap())
+    }
+
+    pub fn overwrite_u32(&mut self, idx: usize, value: u32) {
+        let bytes = value.to_le_bytes();
+        for i in 0..4 {
+            self.code[idx + i] = bytes[i];
+        }
     }
 
     pub fn get_line(&self, index: usize) -> usize {
