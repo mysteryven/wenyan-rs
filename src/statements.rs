@@ -1,9 +1,8 @@
 use crate::{
     compiler::Parser,
-    convert::hanzi2num::{self, hanzi2num},
+    convert::hanzi2num::{hanzi2num},
     opcode,
     tokenize::token::Token,
-    value::Value,
 };
 
 pub fn unary_statement(parser: &mut Parser, token: &Token) {
