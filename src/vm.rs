@@ -191,14 +191,14 @@ impl<'a> VM<'a> {
                     }
                 }
                 opcode::GET_LOCAL => {
-                    let offset = self.read_byte() as usize;
+                    let offset = self.read_u32() as usize;
                     let value = self.peek_local(offset);
                     if let Some(value) = value {
                         self.stack.push(value.clone());
                     }
                 }
                 opcode::SET_LOCAL => {
-                    let offset = self.read_byte() as usize;
+                    let offset = self.read_u32() as usize;
                     self.local_stack.get_mut(offset).map(|x| {
                         let value = self.stack.pop();
                         if let Some(value) = value {
