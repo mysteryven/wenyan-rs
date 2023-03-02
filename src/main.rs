@@ -56,5 +56,7 @@ fn main() {
 #[test]
 
 fn run() {
-    interpret("吾有一數曰十名之曰「甲」 若陽者 吾有一數曰一名之曰「甲」 加「甲」以五書之 云云 加「甲」以五書之 ", VMMode::Debug);
+    interpret("吾有一數曰五名之曰「甲」
+    「甲」書之
+    「「黃河流水鳴濺濺」」書之", VMMode::Run);
 }

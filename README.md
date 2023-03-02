@@ -16,7 +16,22 @@ npm install wenyan-rs
 
 The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, but some of my rules may be stricter for ease of implementation.
 
-Variables need to be wrapped in single quotes. 
+Treats single [data](https://wy-lang.org/spec.html#data) as expression and will pushed into stack. 
+
+```bash
+吾有一數曰五名之曰「甲」
+「甲」書之
+「「黃河流水鳴濺濺」」書之
+```
+
+Output vs Online IDE
+
+```bash
++5
++黃河流水鳴濺濺
+```
+
+Variable need to be wrapped in single quote. 
 
 ```bash
 吾有一數曰五名之曰「甲」 // ✅
