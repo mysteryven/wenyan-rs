@@ -15,65 +15,73 @@ fn run(input_file: &str, expected_file: &str) -> TestResult {
 }
 
 #[test]
-pub fn test_basic_type() -> TestResult {
+fn test_basic_type() -> TestResult {
     run(
         "tests/inputs/basic-type.wy",
-        "tests/expected/basic-type.out.wy",
+        "tests/expected/basic-type.out.txt",
     )
 }
 
 #[test]
-pub fn test_binary_statement() -> TestResult {
+fn test_binary_statement() -> TestResult {
     run(
         "tests/inputs/binary-statement.wy",
-        "tests/expected/binary-statement.out.wy",
+        "tests/expected/binary-statement.out.txt",
     )
 }
 
 #[test]
-pub fn test_unary_statement() -> TestResult {
+fn test_unary_statement() -> TestResult {
     run(
         "tests/inputs/unary-statement.wy",
-        "tests/expected/unary-statement.out.wy",
+        "tests/expected/unary-statement.out.txt",
     )
 }
 
 #[test]
-pub fn test_binary_if_statement() -> TestResult {
+fn test_binary_if_statement() -> TestResult {
     run(
         "tests/inputs/binary-if-statement.wy",
-        "tests/expected/binary-if-statement.out.wy",
+        "tests/expected/binary-if-statement.out.txt",
     )
 }
 
 #[test]
-pub fn test_declare_statement() -> TestResult {
+fn test_declare_statement() -> TestResult {
     run(
         "tests/inputs/declare-statement.wy",
-        "tests/expected/declare-statement.out.wy",
+        "tests/expected/declare-statement.out.txt",
     )
 }
 
 #[test]
-pub fn test_define_statement() -> TestResult {
+fn test_define_statement() -> TestResult {
     run(
         "tests/inputs/define-statement.wy",
-        "tests/expected/define-statement.out.wy",
+        "tests/expected/define-statement.out.txt",
     )
 }
 
 #[test]
-pub fn test_assign_statement() -> TestResult {
+fn test_assign_statement() -> TestResult {
     run(
         "tests/inputs/assign-statement.wy",
-        "tests/expected/assign-statement.out.wy",
+        "tests/expected/assign-statement.out.txt",
     )
 }
 
 #[test]
-pub fn test_if_statement() -> TestResult {
+fn test_if_statement() -> TestResult {
     run(
         "tests/inputs/if-statement.wy",
-        "tests/expected/if-statement.out.wy",
+        "tests/expected/if-statement.out.txt",
+    )
+}
+
+#[test]
+fn test_bool_algebra_statement() -> TestResult {
+    run(
+        "tests/inputs/bool-algebra-statement.wy",
+        "tests/expected/bool-algebra-statement.out.txt",
     )
 }
