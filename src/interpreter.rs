@@ -1,7 +1,7 @@
 use crate::{
     chunk::Chunk,
     compiler::Parser,
-    interner::{Interner},
+    interner::Interner,
     vm::{VMMode, VM},
 };
 

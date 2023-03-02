@@ -85,3 +85,11 @@ fn test_bool_algebra_statement() -> TestResult {
         "tests/expected/bool-algebra-statement.out.txt",
     )
 }
+
+#[test]
+fn test_for_statement() -> TestResult {
+    run(
+        "tests/inputs/for-statement.wy",
+        "tests/expected/for-statement.out.txt",
+    )
+}

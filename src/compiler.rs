@@ -4,8 +4,9 @@ use crate::{
     interpreter::Runtime,
     opcode,
     statements::{
-        assign_statement, binary_statement, boolean_algebra_statement, expression_statement,
-        if_statement, name_is_statement, normal_declaration, print_statement, unary_statement,
+        assign_statement, binary_statement, boolean_algebra_statement, break_statement,
+        expression_statement, for_while_statement, if_statement, name_is_statement,
+        normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -146,6 +147,10 @@ impl<'a> Parser<'a> {
                     todo!("reference statement")
                 }
             }
+            Token::Loop => {
+                for_while_statement(self);
+            }
+            Token::Break => break_statement(self),
             _ => expression_statement(self),
         }
     }
@@ -356,5 +361,19 @@ impl<'a> Parser<'a> {
         };
 
         self.set_u32(patch_index, jump);
+    }
+    pub fn emit_loop(&mut self, loop_start: usize) {
+        let offset = self.current_chunk().len() - loop_start + 4;
+
+        let offset = match u32::try_from(offset) {
+            Ok(offset) => offset,
+            Err(_) => {
+                self.error("Too many jumps in one chunk.");
+                0
+            }
+        };
+
+        self.emit_u8(opcode::LOOP);
+        self.emit_u32(offset);
     }
 }

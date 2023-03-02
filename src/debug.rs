@@ -102,9 +102,18 @@ impl<'a> Debugger<'a> {
             opcode::POP_LOCAL => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_POP_LOCAL")
             }
+            opcode::DISCARD_BREAK => self.disassemble_simple_instruction(
+                &mut opcode_metadata,
+                offset,
+                "OP_DISCARD_BREAK",
+            ),
             opcode::JUMP_IF_FALSE => self.jump_instruction(1, offset, "OP_JUMP_IF_FALSE"),
             opcode::JUMP => self.jump_instruction(1, offset, "OP_JUMP"),
-
+            opcode::LOOP => self.jump_instruction(-1, offset, "OP_LOOP"),
+            opcode::BREAK => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_BREAK")
+            }
+            opcode::RECORD_BREAK => self.jump_instruction(1, offset, "OP_RECORD_BREAK"),
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());

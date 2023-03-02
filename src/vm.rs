@@ -23,6 +23,7 @@ pub struct VM<'a> {
     local_stack: Vec<Value>,
     runtime: &'a mut Runtime,
     globals: HashMap<String, Value>,
+    break_points: Vec<*const u8>,
 }
 
 impl<'a> VM<'a> {
@@ -34,6 +35,7 @@ impl<'a> VM<'a> {
             local_stack: vec![],
             runtime,
             globals: HashMap::new(),
+            break_points: vec![],
         }
     }
     pub fn offset(&self) -> usize {
@@ -214,13 +216,13 @@ impl<'a> VM<'a> {
                     let value = self.stack.last();
                     if let Some(value) = value {
                         if is_falsy(value) {
-                            self.skip(offset)
+                            self.skip(offset, true)
                         }
                     }
                 }
                 opcode::JUMP => {
                     let offset = self.read_u32();
-                    self.skip(offset);
+                    self.skip(offset, true);
                 }
                 opcode::AND => {
                     let a = self.stack.pop();
@@ -249,6 +251,26 @@ impl<'a> VM<'a> {
 
                         self.stack.push(Value::Bool(boolean))
                     }
+                }
+                opcode::LOOP => {
+                    let offset = self.read_u32();
+                    self.skip(offset, false);
+                }
+                opcode::BREAK => {
+                    if let Some(ip) = self.break_points.last() {
+                        self.ip = ip.clone();
+                    } else {
+                        self.runtime_error("no loop to break.");
+                        return InterpretStatus::RuntimeError;
+                    }
+                }
+                opcode::DISCARD_BREAK => {
+                    self.break_points.pop();
+                }
+                opcode::RECORD_BREAK => {
+                    let offset = self.read_u32();
+                    let ip = unsafe { self.ip.add(offset as usize) };
+                    self.break_points.push(ip);
                 }
                 _ => {}
             }
@@ -304,9 +326,13 @@ impl<'a> VM<'a> {
             value
         }
     }
-    fn skip(&mut self, offset: u32) {
+    fn skip(&mut self, offset: u32, is_add: bool) {
         unsafe {
-            self.ip = self.ip.add(offset as usize);
+            self.ip = if is_add {
+                self.ip.add(offset as usize)
+            } else {
+                self.ip.sub((offset + 1) as usize) // self.ip is point to next opcode
+            }
         }
     }
     fn format_value(&self, value: &Value) -> String {

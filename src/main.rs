@@ -56,7 +56,13 @@ fn main() {
 #[test]
 
 fn run() {
-    interpret("吾有一數曰五名之曰「甲」
-    「甲」書之
-    「「黃河流水鳴濺濺」」書之", VMMode::Run);
+    interpret(
+        "吾有一數曰一名之曰「甲」
+    恆為是
+        若「甲」等於一者
+            乃止
+        云云
+    云云",
+        VMMode::Debug,
+    );
 }

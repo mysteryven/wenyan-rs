@@ -237,6 +237,7 @@ pub fn if_statement<'a>(parser: &'a mut Parser) {
         parser.patch_jump(else_jump);
     } else {
         parser.patch_jump(then_jump);
+        parser.emit_u8(opcode::POP);
     }
 }
 
@@ -248,4 +249,19 @@ pub fn boolean_algebra_statement<'a>(parser: &'a mut Parser) {
         _ => parser.error_at_current("expect '中有陽乎' or '中無陰乎'."),
     }
     parser.advance()
+}
+
+pub fn for_while_statement<'a>(parser: &'a mut Parser) {
+    let break_jump = parser.emit_jump(opcode::RECORD_BREAK);
+    parser.advance();
+    let loop_start = parser.current_chunk().code().len();
+    block_statement(parser, []);
+    parser.emit_loop(loop_start);
+    parser.patch_jump(break_jump);
+    parser.emit_u8(opcode::DISCARD_BREAK);
+}
+
+pub fn break_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.emit_u8(opcode::BREAK)
 }
