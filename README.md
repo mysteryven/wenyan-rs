@@ -51,6 +51,29 @@ Output vs Online IDE:
 +15
 ```
 
+Boolean algebra statement always get boolean.
+
+```bash
+吾有一數曰五名之曰「甲」
+吾有一數曰六名之曰「乙」
+夫「甲」「乙」中有陽乎
+書之
+
+吾有一數曰五名之曰「甲」
+吾有一數曰六名之曰「乙」
+夫「甲」「乙」中無陰乎
+書之
+```
+
+Output vs Online IDE:
+
+```diff
+-5
+-6
++true
++true
+```
+
 ## Future Work
 
 There are still some features not implemented, part of them are listed in [this issue](https://github.com/mysteryven/wenyan-rs/issues/1).

@@ -4,8 +4,8 @@ use crate::{
     interpreter::Runtime,
     opcode,
     statements::{
-        assign_statement, binary_statement, expression_statement, if_statement, name_is_statement,
-        normal_declaration, print_statement, unary_statement,
+        assign_statement, binary_statement, boolean_algebra_statement, expression_statement,
+        if_statement, name_is_statement, normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -132,6 +132,20 @@ impl<'a> Parser<'a> {
             Token::AssignFrom => assign_statement(self),
             Token::NameIs => name_is_statement(self),
             Token::If => if_statement(self),
+            Token::Fu => {
+                self.advance();
+                self.expression();
+                if self.is_kind_of(self.current(), Token::Identifier)
+                    || self.is_kind_of(self.current(), Token::True)
+                    || self.is_kind_of(self.current(), Token::False)
+                    || self.is_kind_of(self.current(), Token::String)
+                    || self.is_kind_of(self.current(), Token::Number)
+                {
+                    boolean_algebra_statement(self)
+                } else {
+                    todo!("reference statement")
+                }
+            }
             _ => expression_statement(self),
         }
     }

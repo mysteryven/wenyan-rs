@@ -17,29 +17,25 @@ pub enum Token {
 
     Print, // 書之
 
-    // ARITH_BINARY_OP
     Plus,  // 加
     Minus, // 減
     Star,  // 乘
 
-    // preposition
     PrepositionLeft,  // 於
     PrepositionRight, // 以
 
-    // Unary OP
-    Invert, // 變
+    EqualEqual,  // 等於
+    BangEqual,   // 不等於
+    Greater,     // 大於
+    Less,        // 小於
+    BangGreater, // 不大於
+    BangLess,    // 不小於
 
-    // if logic
-    EqualEqual,
-    BangEqual,
-    Greater,
-    Less,
-    BangGreater,
-    BangLess,
-
-    AssignFrom, //  '昔之'
+    AssignFrom, // '昔之'
     AssignTo,   // 今
     Prev,       // 其
+    Fu,         // 夫
+    Invert,     // 變
 
     Conjunction, // 者
     Sure,        // 是矣
@@ -48,6 +44,9 @@ pub enum Token {
 
     If,   // 若
     Else, // 若非
+
+    And, // 中無陰乎,
+    Or,  // 中有陽乎
 
     Eof,
     Error(String),

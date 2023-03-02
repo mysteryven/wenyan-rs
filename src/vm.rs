@@ -222,6 +222,34 @@ impl<'a> VM<'a> {
                     let offset = self.read_u32();
                     self.skip(offset);
                 }
+                opcode::AND => {
+                    let a = self.stack.pop();
+                    let b = self.stack.pop();
+
+                    if let (Some(a), Some(b)) = (a, b) {
+                        let boolean = if !is_falsy(&a) && !is_falsy(&b) {
+                            true
+                        } else {
+                            false
+                        };
+
+                        self.stack.push(Value::Bool(boolean))
+                    }
+                }
+                opcode::OR => {
+                    let a = self.stack.pop();
+                    let b = self.stack.pop();
+
+                    if let (Some(a), Some(b)) = (a, b) {
+                        let boolean = if !is_falsy(&a) || !is_falsy(&b) {
+                            true
+                        } else {
+                            false
+                        };
+
+                        self.stack.push(Value::Bool(boolean))
+                    }
+                }
                 _ => {}
             }
         }

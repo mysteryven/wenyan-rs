@@ -1,9 +1,4 @@
-use crate::{
-    compiler::Parser,
-    convert::hanzi2num::{hanzi2num},
-    opcode,
-    tokenize::token::Token,
-};
+use crate::{compiler::Parser, convert::hanzi2num::hanzi2num, opcode, tokenize::token::Token};
 
 pub fn unary_statement(parser: &mut Parser, token: &Token) {
     parser.advance();
@@ -243,4 +238,14 @@ pub fn if_statement<'a>(parser: &'a mut Parser) {
     } else {
         parser.patch_jump(then_jump);
     }
+}
+
+pub fn boolean_algebra_statement<'a>(parser: &'a mut Parser) {
+    parser.expression();
+    match parser.current().get_value() {
+        Token::And => parser.emit_u8(opcode::AND),
+        Token::Or => parser.emit_u8(opcode::OR),
+        _ => parser.error_at_current("expect '中有陽乎' or '中無陰乎'."),
+    }
+    parser.advance()
 }

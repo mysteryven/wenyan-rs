@@ -25,3 +25,5 @@ pub const SET_LOCAL: u8 = 23;
 pub const POP_LOCAL: u8 = 24;
 pub const JUMP_IF_FALSE: u8 = 25;
 pub const JUMP: u8 = 26;
+pub const AND: u8 = 27;
+pub const OR: u8 = 28;
