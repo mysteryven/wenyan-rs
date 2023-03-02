@@ -26,9 +26,9 @@ Variables need to be wrapped in single quotes.
 Disable partially define variables. 
 
 ```bash
+吾有二數曰五曰六  // ✅
 吾有二數曰五曰六名之曰「甲」名之曰「乙」 // ✅
 吾有二數曰五曰六名之曰「甲」 // ❎
-吾有二數曰五曰六  // ✅
 ```
 
 Has implicit block scope.
@@ -53,7 +53,7 @@ Output vs Online IDE:
 
 ## Future Work
 
-There are still some features not implemented yet, part of them are listed in [this issue](./).
+There are still some features not implemented, part of them are listed in [this issue](https://github.com/mysteryven/wenyan-rs/issues/1).
 
 ## Credits
 
