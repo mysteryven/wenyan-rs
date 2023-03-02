@@ -89,6 +89,19 @@ Output vs Online IDE:
 +true
 ```
 
+Since I write my own virtual machine, It can show more runtime errors.
+
+```bash
+吾有二言曰『你』曰『好』名之曰「甲」名之曰「乙」 
+減「甲」以「乙」書之
+```
+
+Output
+
+```bash
+[line 2] errors: two string only can be add
+```
+
 ## Future Work
 
 There are still some features not implemented, part of them are listed in [this issue](https://github.com/mysteryven/wenyan-rs/issues/1).

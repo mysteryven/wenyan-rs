@@ -5,7 +5,7 @@ use crate::{
     opcode,
     statements::{
         assign_statement, binary_statement, boolean_algebra_statement, break_statement,
-        expression_statement, for_while_statement, if_statement, name_is_statement,
+        expression_statement, for_statement, for_while_statement, if_statement, name_is_statement,
         normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
@@ -64,6 +64,7 @@ pub struct Parser<'a> {
     current: Option<WithSpan<Token>>,
     previous: Option<WithSpan<Token>>,
     has_error: bool,
+    panic_mode: bool,
     runtime: &'a mut Runtime,
     current_compiler: Box<Compiler>,
 }
@@ -79,6 +80,7 @@ impl<'a> Parser<'a> {
             current: None,
             previous: None,
             has_error: false,
+            panic_mode: false,
             runtime,
             current_compiler: Compiler::new(),
         }
@@ -91,6 +93,7 @@ impl<'a> Parser<'a> {
     }
     pub fn compile(&mut self) -> bool {
         self.has_error = false;
+        self.panic_mode = false;
 
         self.advance();
 
@@ -150,6 +153,7 @@ impl<'a> Parser<'a> {
             Token::Loop => {
                 for_while_statement(self);
             }
+            Token::For => for_statement(self),
             Token::Break => break_statement(self),
             _ => expression_statement(self),
         }
@@ -158,7 +162,30 @@ impl<'a> Parser<'a> {
         self.emit_return();
     }
     fn synchronize(&mut self) {
-        unimplemented!()
+        self.panic_mode = false;
+        loop {
+            let current = self.current.as_ref().unwrap().get_value().clone();
+
+            match current {
+                Token::Decl
+                | Token::DeclShort
+                | Token::Print
+                | Token::If
+                | Token::Fu
+                | Token::Loop
+                | Token::For
+                | Token::Break
+                | Token::AssignFrom
+                | Token::Plus
+                | Token::Minus
+                | Token::Star
+                | Token::Invert
+                | Token::Eof => return,
+                _ => {
+                    self.advance();
+                }
+            }
+        }
     }
     pub fn emit_u8(&mut self, byte: u8) {
         let line_number = self.previous().get_line();
@@ -245,21 +272,29 @@ impl<'a> Parser<'a> {
 
     pub fn error_at_current(&mut self, msg: &str) {
         self.has_error = true;
-
+        if self.panic_mode {
+            return;
+        }
+        self.panic_mode = true;
         self.error_at(self.current.as_ref().unwrap(), msg)
     }
     pub fn error(&mut self, msg: &str) {
         self.has_error = true;
+        if self.panic_mode {
+            return;
+        }
+
+        self.panic_mode = true;
         self.error_at(self.previous.as_ref().unwrap(), msg)
     }
     pub fn error_at(&self, token: &WithSpan<Token>, msg: &str) {
-        print!("[line {}] error", token.get_line());
+        eprint!("[line {}] error", token.get_line());
 
         if self.is_kind_of(token, Token::Eof) {
-            print!(" at end")
+            eprint!(" at end")
         }
 
-        print!(": {}\n", msg)
+        eprint!(": {}\n", msg)
     }
     fn is_kind_of(&self, t: &WithSpan<Token>, target: Token) -> bool {
         *t.get_value() == target

@@ -17,12 +17,15 @@ pub fn interpret(buf: &str, mode: VMMode) {
 
     let mut compiler = Parser::new(buf, &mut chunk, &mut runtime);
 
-    compiler.compile();
+    if !compiler.compile() {
+        let mut vm = VM::new(&chunk, chunk.code().as_ptr(), &mut runtime);
+        vm.run(mode);
 
-    let mut vm = VM::new(&chunk, chunk.code().as_ptr(), &mut runtime);
-    vm.run(mode);
-
-    vm.free();
+        vm.free();
+        std::process::exit(0);
+    } else {
+        std::process::exit(1);
+    }
 }
 
 pub struct Runtime {

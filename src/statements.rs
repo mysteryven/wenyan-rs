@@ -221,7 +221,7 @@ pub fn name_is_statement<'a>(parser: &'a mut Parser) {
 
 pub fn if_statement<'a>(parser: &'a mut Parser) {
     parser.advance();
-    parser.statement();
+    expression_statement(parser);
     parser.consume(Token::Conjunction, "expect '者'");
     let then_jump = parser.emit_jump(opcode::JUMP_IF_FALSE);
     parser.emit_u8(opcode::POP);
@@ -264,4 +264,10 @@ pub fn for_while_statement<'a>(parser: &'a mut Parser) {
 pub fn break_statement<'a>(parser: &'a mut Parser) {
     parser.advance();
     parser.emit_u8(opcode::BREAK)
+}
+
+pub fn for_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.expression();
+    parser.consume(Token::For, "expect '遍' in for statement.");
 }

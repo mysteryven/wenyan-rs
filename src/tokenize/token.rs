@@ -45,8 +45,10 @@ pub enum Token {
     If,   // 若
     Else, // 若非
 
-    Loop,  // 恆為是
-    Break, // 乃止
+    Loop,   // 恆為是
+    For,    // 為是
+    ForMid, // 遍
+    Break,  // 乃止
 
     And, // 中無陰乎,
     Or,  // 中有陽乎

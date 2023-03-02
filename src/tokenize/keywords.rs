@@ -47,6 +47,8 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("中有陽乎", Token::Or));
 
     key_defines.push(("恆為是", Token::Loop));
+    key_defines.push(("為是", Token::For));
+    key_defines.push(("遍", Token::ForMid));
     key_defines.push(("乃止", Token::Break));
 
     let keywords: Vec<(Vec<char>, Token)> = key_defines
