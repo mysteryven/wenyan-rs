@@ -14,9 +14,9 @@ npm install wenyan-rs
 
 ## Differences
 
-The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, but some of my rules may be stricter for ease of implementation.
+The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, but some of my rules may be more strict for ease of implementation.
 
-Treats single [data](https://wy-lang.org/spec.html#data) as expression and will pushed into stack. 
+Treats single [data](https://wy-lang.org/spec.html#data) as expression and will be pushed into stack. 
 
 ```bash
 吾有一數曰五名之曰「甲」
@@ -26,7 +26,7 @@ Treats single [data](https://wy-lang.org/spec.html#data) as expression and will 
 
 Output vs Online IDE
 
-```bash
+```diff
 +5
 +黃河流水鳴濺濺
 ```
