@@ -1,5 +1,9 @@
 use crate::{
-    compiler::Parser, convert::hanzi2num::hanzi2num, opcode, tokenize::token::Token, value::Value,
+    compiler::Parser,
+    convert::hanzi2num::hanzi2num,
+    opcode::{self},
+    tokenize::token::Token,
+    value::Value,
 };
 
 pub fn unary_statement(parser: &mut Parser, token: &Token) {
@@ -211,13 +215,14 @@ pub fn name_is_statement<'a>(parser: &'a mut Parser) {
     if let Some(global) = global {
         parser.emit_u8(opcode::DEFINE_GLOBAL);
         parser.emit_u32(global);
-        parser.emit_u8(0);
-        // pick top of stack and pop top of stack immediately,
-        // this is different from normal declaration, because it always choose top of stack.
-        parser.emit_u8(opcode::POP);
     } else {
         parser.emit_u8(opcode::DEFINE_LOCAL);
     }
+
+    // pick top of stack and pop top of stack immediately,
+    // this is different from normal declaration, because it always choose top of stack.
+    parser.emit_u8(0);
+    parser.emit_u8(opcode::POP);
 }
 
 pub fn if_statement<'a>(parser: &'a mut Parser) {
@@ -268,9 +273,56 @@ pub fn break_statement<'a>(parser: &'a mut Parser) {
 }
 
 pub fn for_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.expression();
+    parser.consume(Token::ForMid, "expect '遍' in for statement.");
+
+    let name = String::from("inner_for_loop_var");
     parser.begin_scope();
 
-    parser.expression();
+    let break_jump = parser.emit_jump(opcode::RECORD_BREAK);
+
+    // 吾有一數。曰「inner_for_loop_var」。名之曰「inner_for_loop_var」。
+    parser.define_local_variable(name.as_str());
+
+    let slot = parser
+        .resolve_local(name)
+        .expect("should inject temp var into for loop.");
+
+    let loop_start = parser.current_chunk().code().len();
+
+    // 「inner_for_loop_var」大於零
+    parser.emit_u8(opcode::GET_LOCAL);
+    parser.emit_u32(slot);
+    parser.emit_constant(Value::Number(0.0));
+    parser.emit_u8(opcode::GREATER);
+
+    let exit_jump = parser.emit_jump(opcode::JUMP_IF_FALSE);
+    parser.emit_u8(opcode::POP);
+
+    let body_jump = parser.emit_jump(opcode::JUMP);
+    let increase_start = parser.current_chunk().code().len();
+
+    // 減「inner_for_loop_var」以一
+    // 昔之「inner_for_loop_var」今其是矣
+    parser.emit_u8(opcode::GET_LOCAL);
+    parser.emit_u32(slot);
+    parser.emit_constant(Value::Number(1.0));
+    parser.emit_u8(opcode::SUBTRACT);
+    parser.emit_u8(opcode::PREPOSITION_RIGHT);
+    parser.emit_u8(opcode::SET_LOCAL);
+    parser.emit_u32(slot);
+
+    parser.emit_loop(loop_start);
+    parser.patch_jump(body_jump);
+
+    block_statement(parser, []);
+
+    parser.emit_loop(increase_start);
+    parser.patch_jump(exit_jump);
+    parser.patch_jump(break_jump);
+    parser.emit_u8(opcode::DISCARD_BREAK);
+    parser.emit_u8(opcode::POP);
 
     parser.end_scope();
 }

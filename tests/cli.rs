@@ -93,3 +93,11 @@ fn test_for_statement() -> TestResult {
         "tests/expected/for-statement.out.txt",
     )
 }
+
+#[test]
+fn test_for_enum_statement() -> TestResult {
+    run(
+        "tests/inputs/for-enum-statement.wy",
+        "tests/expected/for-enum-statement.out.txt",
+    )
+}

@@ -85,7 +85,9 @@ impl Scanner {
                     data = (Some(chs.len()), Some(token.clone()));
                 } else {
                     self.advance();
-                    return self.error_token("Unexpected character.");
+                    return self.error_token(
+                        "Unexpected character, maybe you need use 「」 or 『』 to wrap it.",
+                    );
                 }
 
                 self.step_by(data.0.unwrap());

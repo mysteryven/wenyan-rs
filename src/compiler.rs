@@ -234,12 +234,16 @@ impl<'a> Parser<'a> {
 
         let token = self.scanner.scan_token();
 
-        match token.get_value() {
-            Token::Error(msg) => self.error_at_current(msg),
-            _ => {}
-        }
+        let msg = match token.get_value() {
+            Token::Error(msg) => Some(msg.to_owned()),
+            _ => None,
+        };
 
         self.current = Some(token);
+
+        if let Some(msg) = msg {
+            self.error_at_current(msg.as_str())
+        }
     }
     pub fn consume(&mut self, token: Token, msg: &str) {
         if self.is_kind_of(self.current.as_ref().unwrap(), token) {
@@ -330,7 +334,7 @@ impl<'a> Parser<'a> {
 
     pub fn named_variable(&mut self) {
         let name = self.get_prev_token_string();
-        let arg = self.current_compiler.resolve_local(name);
+        let arg = self.resolve_local(name);
 
         let (x, y) = match arg {
             Some(arg) => (opcode::GET_LOCAL, arg),
@@ -413,5 +417,11 @@ impl<'a> Parser<'a> {
     pub fn get_prev_token_string(&self) -> String {
         let token = self.previous();
         String::from(self.pick_str(token))
+    }
+    pub fn define_local_variable(&mut self, name: &str) {
+        self.add_local(name.to_string());
+        self.emit_u8(opcode::DEFINE_LOCAL);
+        self.emit_u8(0);
+        self.emit_u8(opcode::POP);
     }
 }
