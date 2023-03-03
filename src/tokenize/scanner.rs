@@ -27,7 +27,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<WithSpan<Token>> {
+    fn scan_tokens(&mut self) -> Vec<WithSpan<Token>> {
         let mut list = vec![];
 
         loop {

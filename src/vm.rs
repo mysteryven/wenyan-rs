@@ -44,9 +44,6 @@ impl<'a> VM<'a> {
     pub fn peek(&self, distance: usize) -> Option<&Value> {
         self.stack.get(self.stack.len() - 1 - distance)
     }
-    pub fn peek_local(&self, distance: usize) -> Option<&Value> {
-        self.local_stack.get(self.local_stack.len() - 1 - distance)
-    }
     pub fn show_stack(&self) {
         println!("  ");
         println!("  ");

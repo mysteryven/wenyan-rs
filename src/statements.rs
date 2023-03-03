@@ -260,7 +260,7 @@ pub fn boolean_algebra_statement<'a>(parser: &'a mut Parser) {
 pub fn for_while_statement<'a>(parser: &'a mut Parser) {
     let break_jump = parser.emit_jump(opcode::RECORD_BREAK);
     parser.advance();
-    let loop_start = parser.current_chunk().code().len();
+    let loop_start = parser.current_code_len();
     block_statement(parser, []);
     parser.emit_loop(loop_start);
     parser.patch_jump(break_jump);
@@ -289,7 +289,7 @@ pub fn for_statement<'a>(parser: &'a mut Parser) {
         .resolve_local(name)
         .expect("should inject temp var into for loop.");
 
-    let loop_start = parser.current_chunk().code().len();
+    let loop_start = parser.current_code_len();
 
     // 「inner_for_loop_var」大於零
     parser.emit_u8(opcode::GET_LOCAL);
@@ -301,7 +301,7 @@ pub fn for_statement<'a>(parser: &'a mut Parser) {
     parser.emit_u8(opcode::POP);
 
     let body_jump = parser.emit_jump(opcode::JUMP);
-    let increase_start = parser.current_chunk().code().len();
+    let increase_start = parser.current_code_len();
 
     // 減「inner_for_loop_var」以一
     // 昔之「inner_for_loop_var」今其是矣

@@ -34,9 +34,6 @@ impl Compiler {
     pub fn begin_scope(&mut self) {
         self.scope_depth += 1;
     }
-    pub fn locals_mut(&mut self) -> &mut Vec<Local> {
-        &mut self.locals
-    }
     pub fn scope_depth(&self) -> Depth {
         self.scope_depth
     }
@@ -84,6 +81,9 @@ impl<'a> Parser<'a> {
             runtime,
             current_compiler: Compiler::new(),
         }
+    }
+    pub fn current_code_len(&self) -> usize {
+        self.compiling_chunk.code().len()
     }
     pub fn current_chunk(&self) -> &Chunk {
         self.compiling_chunk

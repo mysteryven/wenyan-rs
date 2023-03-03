@@ -45,12 +45,6 @@ pub struct Span {
 }
 
 impl Span {
-    pub fn new(start: usize, end: usize) -> Self {
-        Self {
-            start: BytePos(start),
-            end: BytePos(end),
-        }
-    }
     pub fn from(start: BytePos, end: BytePos) -> Self {
         Self { start, end }
     }

@@ -26,7 +26,6 @@ pub const AND: u8 = 27;
 pub const OR: u8 = 28;
 
 pub const LOOP: u8 = 29;
-pub const LOOP_UNTIL: u8 = 30;
-pub const BREAK: u8 = 31;
-pub const RECORD_BREAK: u8 = 32;
-pub const DISCARD_BREAK: u8 = 33;
+pub const BREAK: u8 = 30;
+pub const RECORD_BREAK: u8 = 31;
+pub const DISCARD_BREAK: u8 = 32;
