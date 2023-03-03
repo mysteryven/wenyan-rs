@@ -96,10 +96,10 @@ Since I write my own virtual machine, It can show more runtime errors.
 減「甲」以「乙」書之
 ```
 
-Output
+Output:
 
 ```bash
-[line 2] errors: two string only can be add
+[line 2] errors: two string can only be added
 ```
 
 ## Future Work

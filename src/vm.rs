@@ -193,8 +193,8 @@ impl<'a> VM<'a> {
                     }
                 }
                 opcode::GET_LOCAL => {
-                    let offset = self.read_u32() as usize;
-                    let value = self.peek_local(offset);
+                    let slot = self.read_u32() as usize;
+                    let value = self.local_stack.get(slot);
                     if let Some(value) = value {
                         self.stack.push(value.clone());
                     }
@@ -385,7 +385,7 @@ impl<'a> VM<'a> {
                     let str_id = self.runtime.interner_mut().intern(&str);
                     self.stack.push(Value::String(str_id));
                 } else {
-                    self.runtime_error("two string only can be add");
+                    self.runtime_error("two string can only be added");
                 }
             }
             _ => {

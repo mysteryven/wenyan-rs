@@ -1,4 +1,6 @@
-use crate::{compiler::Parser, convert::hanzi2num::hanzi2num, opcode, tokenize::token::Token};
+use crate::{
+    compiler::Parser, convert::hanzi2num::hanzi2num, opcode, tokenize::token::Token, value::Value,
+};
 
 pub fn unary_statement(parser: &mut Parser, token: &Token) {
     parser.advance();
@@ -160,15 +162,14 @@ fn declare_variable(parser: &mut Parser) {
         return;
     }
 
-    let token = parser.previous().get_value().clone();
-    parser.add_local(token);
+    parser.add_local(parser.get_prev_token_string());
 }
 
 pub fn assign_statement<'a>(parser: &'a mut Parser) {
     parser.advance(); // skip '昔之'
     parser.advance(); // skip 'variable name'
 
-    let arg = parser.resolve_local(parser.previous().get_value().clone());
+    let arg = parser.resolve_local(parser.get_prev_token_string());
 
     let (x, y) = match arg {
         Some(arg) => (opcode::SET_LOCAL, arg),
@@ -267,7 +268,9 @@ pub fn break_statement<'a>(parser: &'a mut Parser) {
 }
 
 pub fn for_statement<'a>(parser: &'a mut Parser) {
-    parser.advance();
+    parser.begin_scope();
+
     parser.expression();
-    parser.consume(Token::For, "expect '遍' in for statement.");
+
+    parser.end_scope();
 }

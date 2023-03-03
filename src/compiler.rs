@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub struct Local {
-    token: Token,
+    name: String,
     depth: Depth,
 }
 
@@ -40,15 +40,15 @@ impl Compiler {
     pub fn scope_depth(&self) -> Depth {
         self.scope_depth
     }
-    pub fn add_local(&mut self, token: Token) {
+    pub fn add_local(&mut self, name: String) {
         self.locals.push(Local {
-            token,
+            name,
             depth: self.scope_depth,
         });
     }
-    pub fn resolve_local(&mut self, token: Token) -> Option<u32> {
+    pub fn resolve_local(&mut self, name: String) -> Option<u32> {
         for (i, local) in self.locals.iter().enumerate().rev() {
-            if local.token == token {
+            if local.name.as_str() == name {
                 return Some(i as u32);
             }
         }
@@ -329,9 +329,8 @@ impl<'a> Parser<'a> {
     }
 
     pub fn named_variable(&mut self) {
-        let arg = self
-            .current_compiler
-            .resolve_local(self.previous().get_value().clone());
+        let name = self.get_prev_token_string();
+        let arg = self.current_compiler.resolve_local(name);
 
         let (x, y) = match arg {
             Some(arg) => (opcode::GET_LOCAL, arg),
@@ -363,7 +362,7 @@ impl<'a> Parser<'a> {
     pub fn get_scope(&mut self) -> i8 {
         self.current_compiler.scope_depth()
     }
-    pub fn resolve_local(&mut self, name: Token) -> Option<u32> {
+    pub fn resolve_local(&mut self, name: String) -> Option<u32> {
         self.current_compiler.resolve_local(name)
     }
     pub fn end_scope(&mut self) {
@@ -376,8 +375,8 @@ impl<'a> Parser<'a> {
             self.emit_u8(opcode::POP_LOCAL)
         }
     }
-    pub fn add_local(&mut self, token: Token) {
-        self.current_compiler.add_local(token);
+    pub fn add_local(&mut self, name: String) {
+        self.current_compiler.add_local(name);
     }
     pub fn emit_jump(&mut self, opcode: u8) -> usize {
         self.emit_u8(opcode);
@@ -410,5 +409,9 @@ impl<'a> Parser<'a> {
 
         self.emit_u8(opcode::LOOP);
         self.emit_u32(offset);
+    }
+    pub fn get_prev_token_string(&self) -> String {
+        let token = self.previous();
+        String::from(self.pick_str(token))
     }
 }

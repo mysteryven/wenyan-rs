@@ -24,7 +24,7 @@ pub fn interpret(buf: &str, mode: VMMode) {
         vm.free();
         std::process::exit(0);
     } else {
-        std::process::exit(1);
+        // std::process::exit(1);
     }
 }
 
