@@ -292,7 +292,7 @@ impl<'a> Parser<'a> {
         self.error_at(self.previous.as_ref().unwrap(), msg)
     }
     pub fn error_at(&self, token: &WithSpan<Token>, msg: &str) {
-        eprint!("[line {}] error", token.get_line());
+        eprint!("[line {}] compiler error", token.get_line());
 
         if self.is_kind_of(token, Token::Eof) {
             eprint!(" at end")

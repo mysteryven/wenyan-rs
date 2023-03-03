@@ -279,7 +279,7 @@ impl<'a> VM<'a> {
     }
     fn runtime_error(&mut self, msg: &str) {
         eprintln!(
-            "[line {}] errors: {}",
+            "[line {}] error: {}",
             self.chunk.get_line(self.offset()),
             msg
         );

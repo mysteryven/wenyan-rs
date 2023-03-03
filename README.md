@@ -89,7 +89,7 @@ Output vs Online IDE:
 +true
 ```
 
-Since I write my own virtual machine, It can show more runtime errors.
+Since I write my own virtual machine, It has ability to report more runtime errors.
 
 ```bash
 吾有二言曰『你』曰『好』名之曰「甲」名之曰「乙」 
