@@ -1,11 +1,16 @@
-use crate::{chunk::Chunk, opcode};
+use crate::{chunk::Chunk, interpreter::Runtime, opcode};
 
 pub struct Debugger<'a> {
     chunk: &'a Chunk,
 }
 
 impl<'a> Debugger<'a> {
-    pub fn new(chunk: &'a Chunk) -> Self {
+    pub fn new(runtime: &'a Runtime) -> Self {
+        Self {
+            chunk: runtime.chunk(),
+        }
+    }
+    pub fn from(chunk: &'a Chunk) -> Self {
         Self { chunk }
     }
     pub fn disassemble(&self, name: &str) -> Vec<String> {

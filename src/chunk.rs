@@ -91,7 +91,7 @@ mod test {
     fn disassemble_simple_ins() {
         let mut chunk = Chunk::new();
         chunk.write(opcode::RETURN, 0);
-        let debugger = Debugger::new(&chunk);
+        let debugger = Debugger::from(&chunk);
         let list = debugger.disassemble("test");
 
         assert_yaml_snapshot!(list, @r###"
@@ -105,7 +105,7 @@ mod test {
         let mut chunk = Chunk::new();
         chunk.write(255, 0);
         chunk.write(opcode::RETURN, 1);
-        let debugger = Debugger::new(&chunk);
+        let debugger = Debugger::from(&chunk);
         let list = debugger.disassemble("test");
         assert_yaml_snapshot!(list, @r###"
         ---
@@ -122,7 +122,7 @@ mod test {
         let idx = chunk.add_constant(Value::Number(1.2)) as u32;
         chunk.add_u32(idx, 0);
         chunk.write(opcode::RETURN, 1);
-        let debugger = Debugger::new(&chunk);
+        let debugger = Debugger::from(&chunk);
         let list = debugger.disassemble("test");
         println!("{:?}", list);
 

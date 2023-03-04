@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::mem;
 
 use crate::{
     chunk::Chunk,
@@ -42,7 +42,6 @@ pub struct Compiler {
     scope_depth: Depth,
     function: Function,
     fun_kind: FunctionType,
-    enclosing: Option<Box<Compiler>>,
 }
 
 impl Compiler {
@@ -140,27 +139,11 @@ impl<'a> Parser<'a> {
             fun
         }
     }
-    pub fn get_compiled_fn(&self) -> Option<Function> {
-        let fun = if let Some(compiler) = Some(self.current_compiler) {
-            Some(compiler.function)
-        } else {
-            None
-        };
-        if let Some(fun) = fun {
-            let debug = Debugger::new(fun.chunk());
+    pub fn get_compiled_fn(&mut self) -> Option<Function> {
+        let empty_compiler = Compiler::init(FunctionType::Script);
+        let compiler = mem::replace(&mut self.current_compiler, empty_compiler);
 
-            let name = if fun.name() != "" {
-                fun.name()
-            } else {
-                "<global context>"
-            };
-
-            debug.disassemble(name);
-
-            Some(fun)
-        } else {
-            None
-        }
+        Some(compiler.function)
     }
     pub fn declaration(&mut self) {
         if self.is_match(Token::Decl) {

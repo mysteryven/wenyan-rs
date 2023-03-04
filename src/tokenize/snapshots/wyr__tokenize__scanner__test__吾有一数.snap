@@ -13,7 +13,7 @@ expression: tokens
     end: 9
   line: 1
 - value:
-    Error: Unexpected character.
+    Error: "Unexpected character, maybe you need use 「」 or 『』 to wrap it."
   span:
     start: 9
     end: 12

@@ -4,8 +4,9 @@ use crate::{
     chunk::Chunk,
     debug::Debugger,
     interner::StrId,
-    interpreter::{InterpretStatus, Runtime},
+    interpreter::{CallFrame, InterpretStatus, Runtime},
     memory::free_object,
+    object::Function,
     opcode,
     value::{is_falsy, is_less, value_equal, Value},
 };
@@ -17,8 +18,6 @@ pub enum VMMode {
 }
 
 pub struct VM<'a> {
-    chunk: &'a Chunk,
-    ip: *const u8,
     stack: Vec<Value>,
     local_stack: Vec<Value>,
     runtime: &'a mut Runtime,
@@ -27,10 +26,8 @@ pub struct VM<'a> {
 }
 
 impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk, ip: *const u8, runtime: &'a mut Runtime) -> Self {
+    pub fn new(runtime: &'a mut Runtime) -> Self {
         Self {
-            chunk,
-            ip,
             stack: vec![],
             local_stack: vec![],
             runtime,
@@ -38,8 +35,45 @@ impl<'a> VM<'a> {
             break_points: vec![],
         }
     }
+    pub fn frame_mut(&mut self) -> &mut CallFrame {
+        self.runtime.current_frame_mut()
+    }
+    pub fn frame(&self) -> &CallFrame {
+        self.runtime.current_frame()
+    }
+    pub fn begin_frame(&mut self, ip: *const u8, slot_begin: usize, function: Function) {
+        let fun_idx = self.runtime.begin_frame(ip, slot_begin, function);
+        self.local_stack.push(Value::Function(fun_idx));
+    }
+    pub fn ip(&self) -> *const u8 {
+        self.frame().ip()
+    }
+    pub fn set_ip(&mut self, ip: *const u8) {
+        self.frame_mut().set_ip(ip)
+    }
+    pub fn add_ip(&mut self, offset: usize) {
+        self.frame_mut().add_ip(offset);
+    }
+    pub fn sub_ip(&mut self, offset: usize) {
+        self.frame_mut().sub_ip(offset);
+    }
+    pub fn chunk(&self) -> &Chunk {
+        self.runtime.chunk()
+    }
+    pub fn normalize_slot(&self, slot: usize) -> usize {
+        self.frame().slot_begin() + slot
+    }
     pub fn offset(&self) -> usize {
-        unsafe { self.ip.offset_from(self.chunk.code().as_ptr()) as usize }
+        unsafe { self.ip().offset_from(self.chunk().code().as_ptr()) as usize }
+    }
+    pub fn stack(&self) -> &Vec<Value> {
+        &self.stack
+    }
+    pub fn local_stack(&self) -> &Vec<Value> {
+        &self.local_stack
+    }
+    pub fn push_local(&mut self, value: Value) {
+        self.local_stack.push(value);
     }
     pub fn peek(&self, distance: usize) -> Option<&Value> {
         self.stack.get(self.stack.len() - 1 - distance)
@@ -65,29 +99,11 @@ impl<'a> VM<'a> {
         }
         println!("  ")
     }
-    pub fn run(&mut self, mode: VMMode) -> InterpretStatus {
-        let debugger = Debugger::new(self.chunk);
-        let mut result = vec![];
-
-        if mode == VMMode::Debug {
-            println!("---");
-            println!("Debug Info start");
-            println!("---");
-        }
-
+    pub fn run(&mut self) -> InterpretStatus {
         loop {
-            if mode == VMMode::Debug {
-                self.show_stack();
-                debugger.disassemble_instruction(&mut result, self.offset());
-            }
             let byte = self.read_byte();
             match byte {
                 opcode::RETURN => {
-                    if mode == VMMode::Debug {
-                        println!("---");
-                        println!("Debug Info end");
-                        println!("---");
-                    }
                     return InterpretStatus::Ok;
                 }
                 opcode::CONSTANT => {
@@ -191,14 +207,16 @@ impl<'a> VM<'a> {
                 }
                 opcode::GET_LOCAL => {
                     let slot = self.read_u32() as usize;
-                    let value = self.local_stack.get(slot);
+                    let value = self.local_stack.get(self.normalize_slot(slot));
                     if let Some(value) = value {
                         self.stack.push(value.clone());
                     }
                 }
                 opcode::SET_LOCAL => {
-                    let offset = self.read_u32() as usize;
-                    self.local_stack.get_mut(offset).map(|x| {
+                    let mut slot = self.read_u32() as usize;
+                    slot = self.normalize_slot(slot);
+
+                    self.local_stack.get_mut(slot).map(|x| {
                         let value = self.stack.pop();
                         if let Some(value) = value {
                             *x = value;
@@ -255,7 +273,7 @@ impl<'a> VM<'a> {
                 }
                 opcode::BREAK => {
                     if let Some(ip) = self.break_points.last() {
-                        self.ip = ip.clone();
+                        self.set_ip(ip.clone());
                     } else {
                         self.runtime_error("no loop to break.");
                         return InterpretStatus::RuntimeError;
@@ -266,7 +284,7 @@ impl<'a> VM<'a> {
                 }
                 opcode::RECORD_BREAK => {
                     let offset = self.read_u32();
-                    let ip = unsafe { self.ip.add(offset as usize) };
+                    let ip = unsafe { self.ip().add(offset as usize) };
                     self.break_points.push(ip);
                 }
                 _ => {}
@@ -280,7 +298,7 @@ impl<'a> VM<'a> {
     fn runtime_error(&mut self, msg: &str) {
         eprintln!(
             "[line {}] error: {}",
-            self.chunk.get_line(self.offset()),
+            self.chunk().get_line(self.offset()),
             msg
         );
 
@@ -310,25 +328,25 @@ impl<'a> VM<'a> {
     }
     fn read_byte(&mut self) -> u8 {
         unsafe {
-            let value = std::ptr::read(self.ip);
-            self.ip = self.ip.add(1);
+            let value = std::ptr::read(self.ip());
+            self.add_ip(1);
             value
         }
     }
     fn read_u32(&mut self) -> u32 {
         unsafe {
-            let slice = &*std::ptr::slice_from_raw_parts(self.ip, 4);
+            let slice = &*std::ptr::slice_from_raw_parts(self.ip(), 4);
             let value = u32::from_le_bytes(slice.try_into().unwrap());
-            self.ip = self.ip.add(4);
+            self.add_ip(4);
             value
         }
     }
     fn skip(&mut self, offset: u32, is_add: bool) {
         unsafe {
-            self.ip = if is_add {
-                self.ip.add(offset as usize)
+            if is_add {
+                self.add_ip(offset as usize);
             } else {
-                self.ip.sub((offset + 1) as usize) // self.ip is point to next opcode
+                self.sub_ip((offset + 1) as usize) // self.ip is point to next opcode
             }
         }
     }
@@ -353,7 +371,8 @@ impl<'a> VM<'a> {
         }
     }
     fn read_constant(&mut self) -> Option<&Value> {
-        self.chunk.constants().get(self.read_u32() as usize)
+        let id = self.read_u32() as usize;
+        self.chunk().constants().get(id)
     }
     fn binary_op(&mut self, op: &str) {
         let slice_start = self.stack.len() - 2;

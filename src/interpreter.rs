@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     compiler::Parser,
     interner::Interner,
-    object::Function,
+    object::{FunId, Function},
     vm::{VMMode, VM},
 };
 
@@ -14,26 +14,29 @@ pub enum InterpretStatus {
     Ok,
 }
 
-pub fn interpret(buf: &str, mode: VMMode) {
-    let chunk = Chunk::new();
+pub fn interpret(buf: &str) -> InterpretStatus {
     let mut runtime = Runtime::new();
-
     let mut compiler = Parser::new(buf, &mut runtime);
 
-    if !compiler.compile() {
-        let mut vm = VM::new(&chunk, chunk.code().as_ptr(), &mut runtime);
-        vm.run(mode);
-
+    if let Some(function) = compiler.compile() {
+        let mut vm = VM::new(&mut runtime);
+        let ip = function.chunk().code().as_ptr();
+        let slot_begin = vm.local_stack().len();
+        vm.begin_frame(ip, slot_begin, function);
+        let ok = vm.run();
         vm.free();
-        std::process::exit(0);
+
+        ok
     } else {
-        // std::process::exit(1);
+        return InterpretStatus::CompilerError;
     }
 }
 
 pub struct Runtime {
     interner: Interner,
     functions: HashMap<u32, Function>,
+    frames: Vec<CallFrame>,
+    current_frame: *mut CallFrame,
 }
 
 impl Runtime {
@@ -41,17 +44,43 @@ impl Runtime {
         Self {
             interner: Interner::new(),
             functions: HashMap::new(),
+            frames: vec![],
+            current_frame: std::ptr::null_mut(),
         }
     }
-    pub fn interner(&self) -> &Interner {
-        &self.interner
+    pub fn current_frame(&self) -> &CallFrame {
+        unsafe { &*self.current_frame }
     }
-    pub fn interner_mut(&mut self) -> &mut Interner {
-        &mut self.interner
+    pub fn current_frame_mut(&self) -> &mut CallFrame {
+        unsafe { &mut *self.current_frame }
     }
-    pub fn free(&mut self) {
-        self.interner.free()
+    pub fn chunk(&self) -> &Chunk {
+        self.get_function(&self.current_frame().fun_id()).chunk()
     }
+    pub fn current_chunk(&self) -> &Chunk {
+        self.get_function(&self.current_frame().fun_id()).chunk()
+    }
+    pub fn begin_frame(&mut self, ip: *const u8, slot_begin: usize, function: Function) -> u32 {
+        let fun_idx = self.add_function(function);
+        let frame = CallFrame::new(ip, fun_idx, slot_begin);
+
+        self.frames.push(frame);
+
+        unsafe {
+            self.current_frame = self.frames.as_mut_ptr().add(self.frames.len() - 1);
+        }
+        fun_idx
+    }
+    pub fn exit_frame(&mut self) {
+        if self.frames.pop().is_some() {
+            unsafe {
+                self.current_frame = self.current_frame.offset(-1);
+            }
+        } else {
+            eprint!("not frame to exit.");
+        }
+    }
+
     pub fn add_function(&mut self, func: Function) -> u32 {
         let id = self.functions.len() as u32;
         self.functions.insert(id, func);
@@ -59,5 +88,50 @@ impl Runtime {
     }
     pub fn get_function(&self, id: &u32) -> &Function {
         self.functions.get(id).expect("Function not found.")
+    }
+
+    pub fn interner(&self) -> &Interner {
+        &self.interner
+    }
+    pub fn interner_mut(&mut self) -> &mut Interner {
+        &mut self.interner
+    }
+
+    pub fn free(&mut self) {
+        self.interner.free()
+    }
+}
+
+pub struct CallFrame {
+    ip: *const u8,
+    fun_id: FunId,
+    slot_begin: usize,
+}
+
+impl CallFrame {
+    pub fn new(ip: *const u8, fun_id: FunId, slot_begin: usize) -> Self {
+        Self {
+            ip,
+            fun_id,
+            slot_begin,
+        }
+    }
+    pub fn set_ip(&mut self, ip: *const u8) {
+        self.ip = ip;
+    }
+    pub fn add_ip(&mut self, offset: usize) {
+        unsafe { self.ip = self.ip.add(offset) }
+    }
+    pub fn sub_ip(&mut self, offset: usize) {
+        unsafe { self.ip = self.ip.sub(offset) }
+    }
+    pub fn ip(&self) -> *const u8 {
+        self.ip
+    }
+    pub fn fun_id(&self) -> FunId {
+        self.fun_id
+    }
+    pub fn slot_begin(&self) -> usize {
+        self.slot_begin
     }
 }
