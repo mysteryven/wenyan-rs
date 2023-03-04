@@ -5,7 +5,7 @@ use crate::{
     compiler::Parser,
     interner::Interner,
     object::{FunId, Function},
-    vm::{VMMode, VM},
+    vm::{VM},
 };
 
 pub enum InterpretStatus {

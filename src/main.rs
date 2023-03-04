@@ -34,7 +34,7 @@ fn main() {
             let mut buf: String = String::new();
             match file.read_to_string(&mut buf) {
                 Ok(_) => {
-                    let mode = match cli.debug {
+                    let _mode = match cli.debug {
                         true => VMMode::Debug,
                         false => VMMode::Run,
                     };

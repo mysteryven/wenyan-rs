@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::{
     chunk::Chunk,
-    debug::Debugger,
     interner::StrId,
     interpreter::{CallFrame, InterpretStatus, Runtime},
     memory::free_object,

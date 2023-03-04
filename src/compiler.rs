@@ -3,7 +3,6 @@ use std::mem;
 use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
-    debug::Debugger,
     interpreter::Runtime,
     object::Function,
     opcode,
