@@ -5,7 +5,7 @@ use crate::{
     compiler::Parser,
     interner::Interner,
     object::{FunId, Function},
-    vm::{VM},
+    vm::{VMMode, VM},
 };
 
 pub enum InterpretStatus {
@@ -14,7 +14,7 @@ pub enum InterpretStatus {
     Ok,
 }
 
-pub fn interpret(buf: &str) -> InterpretStatus {
+pub fn interpret(buf: &str, mode: VMMode) -> InterpretStatus {
     let mut runtime = Runtime::new();
     let mut compiler = Parser::new(buf, &mut runtime);
 
@@ -23,7 +23,7 @@ pub fn interpret(buf: &str) -> InterpretStatus {
         let ip = function.chunk().code().as_ptr();
         let slot_begin = vm.local_stack().len();
         vm.begin_frame(ip, slot_begin, function);
-        let ok = vm.run();
+        let ok = vm.run(mode);
         vm.free();
 
         ok

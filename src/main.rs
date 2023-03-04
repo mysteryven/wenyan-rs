@@ -34,12 +34,12 @@ fn main() {
             let mut buf: String = String::new();
             match file.read_to_string(&mut buf) {
                 Ok(_) => {
-                    let _mode = match cli.debug {
+                    let mode = match cli.debug {
                         true => VMMode::Debug,
                         false => VMMode::Run,
                     };
 
-                    interpret(&buf);
+                    interpret(&buf, mode);
                 }
                 Err(e) => {
                     eprintln!("{}", &s);
@@ -63,5 +63,6 @@ fn run() {
 	吾有一數曰十名之曰「甲」
 	「甲」書之
 	「乙」書之",
+        VMMode::Debug,
     );
 }
