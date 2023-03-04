@@ -65,14 +65,8 @@ impl<'a> VM<'a> {
     pub fn offset(&self) -> usize {
         unsafe { self.ip().offset_from(self.chunk().code().as_ptr()) as usize }
     }
-    pub fn stack(&self) -> &Vec<Value> {
-        &self.stack
-    }
     pub fn local_stack(&self) -> &Vec<Value> {
         &self.local_stack
-    }
-    pub fn push_local(&mut self, value: Value) {
-        self.local_stack.push(value);
     }
     pub fn peek(&self, distance: usize) -> Option<&Value> {
         self.stack.get(self.stack.len() - 1 - distance)

@@ -2,20 +2,10 @@
 
 A bytecode interpreter for [Wenyan-lang](https://github.com/wenyan-lang/wenyan).
 
-## Try it Online
-
-[Playground](./)
-
-## Install
-
-```bash
-npm install wenyan-rs
-```
-
 ## Usage
 
 ```bash
-wyr path/to/file.wy
+cargo run tests/inputs/for-enum-statement.wy
 ```
 
 ## Differences
@@ -98,7 +88,7 @@ Output vs Online IDE
 +黃河流水鳴濺濺
 ```
 
-Since I write my own virtual machine, It has ability to report more runtime errors.
+Since take advantage of our own virtual machine, It has ability to report more kind of runtime errors.
 
 ```bash
 吾有二言曰『你』曰『好』名之曰「甲」名之曰「乙」 
