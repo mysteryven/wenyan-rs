@@ -343,6 +343,13 @@ impl<'a> VM<'a> {
             Value::String(str) => {
                 format!("{}", self.runtime.interner().lookup(*str))
             }
+            Value::Function(idx) => {
+                let name = self.runtime.get_function(idx).name();
+                format!(
+                    "<fn> {}",
+                    if name == "" { "<global context>" } else { name }
+                )
+            }
         }
     }
     fn read_constant(&mut self) -> Option<&Value> {

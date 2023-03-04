@@ -1,7 +1,11 @@
+use std::fmt::Debug;
+
 use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
+    debug::Debugger,
     interpreter::Runtime,
+    object::Function,
     opcode,
     statements::{
         assign_statement, binary_statement, boolean_algebra_statement, break_statement,
@@ -17,18 +21,40 @@ pub struct Local {
     depth: Depth,
 }
 
+impl Default for Local {
+    fn default() -> Self {
+        Self {
+            name: String::default(),
+            depth: 0,
+        }
+    }
+}
+
 type Depth = i8;
+
+pub enum FunctionType {
+    Script,
+    Function,
+}
 
 pub struct Compiler {
     locals: Vec<Local>,
     scope_depth: Depth,
+    function: Function,
+    fun_kind: FunctionType,
+    enclosing: Option<Box<Compiler>>,
 }
 
 impl Compiler {
-    pub fn new() -> Box<Self> {
+    pub fn init(fun_kind: FunctionType) -> Box<Self> {
+        let local = Local::default();
+        let locals = vec![local];
+
         Box::new(Self {
-            locals: vec![],
+            locals,
             scope_depth: 0,
+            function: Function::new(),
+            fun_kind,
         })
     }
     pub fn begin_scope(&mut self) {
@@ -57,7 +83,6 @@ impl Compiler {
 pub struct Parser<'a> {
     scanner: Scanner,
     buf: &'a str,
-    compiling_chunk: &'a mut Chunk,
     current: Option<WithSpan<Token>>,
     previous: Option<WithSpan<Token>>,
     has_error: bool,
@@ -67,31 +92,30 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(buf: &'a str, chunk: &'a mut Chunk, runtime: &'a mut Runtime) -> Self {
+    pub fn new(buf: &'a str, runtime: &'a mut Runtime) -> Self {
         let scanner = Scanner::new(buf);
 
         Self {
             scanner,
             buf,
-            compiling_chunk: chunk,
             current: None,
             previous: None,
             has_error: false,
             panic_mode: false,
             runtime,
-            current_compiler: Compiler::new(),
+            current_compiler: Compiler::init(FunctionType::Script),
         }
     }
     pub fn current_code_len(&self) -> usize {
-        self.compiling_chunk.code().len()
+        self.current_compiler.function.chunk().code().len()
     }
     pub fn current_chunk(&self) -> &Chunk {
-        self.compiling_chunk
+        self.current_compiler.function.chunk()
     }
     pub fn current_chunk_mut(&mut self) -> &mut Chunk {
-        self.compiling_chunk
+        self.current_compiler.function.chunk_mut()
     }
-    pub fn compile(&mut self) -> bool {
+    pub fn compile(&mut self) -> Option<Function> {
         self.has_error = false;
         self.panic_mode = false;
 
@@ -103,8 +127,40 @@ impl<'a> Parser<'a> {
 
         self.consume(Token::Eof, "Expect end of expression");
 
-        self.end_compiler();
-        return self.has_error;
+        self.end_compiler()
+    }
+    pub fn end_compiler(&mut self) -> Option<Function> {
+        self.emit_return();
+
+        let fun = self.get_compiled_fn();
+
+        if self.has_error {
+            None
+        } else {
+            fun
+        }
+    }
+    pub fn get_compiled_fn(&self) -> Option<Function> {
+        let fun = if let Some(compiler) = Some(self.current_compiler) {
+            Some(compiler.function)
+        } else {
+            None
+        };
+        if let Some(fun) = fun {
+            let debug = Debugger::new(fun.chunk());
+
+            let name = if fun.name() != "" {
+                fun.name()
+            } else {
+                "<global context>"
+            };
+
+            debug.disassemble(name);
+
+            Some(fun)
+        } else {
+            None
+        }
     }
     pub fn declaration(&mut self) {
         if self.is_match(Token::Decl) {
@@ -158,9 +214,7 @@ impl<'a> Parser<'a> {
             _ => expression_statement(self),
         }
     }
-    fn end_compiler(&mut self) {
-        self.emit_return();
-    }
+
     fn synchronize(&mut self) {
         self.panic_mode = false;
         loop {
@@ -254,6 +308,10 @@ impl<'a> Parser<'a> {
         self.error_at_current(msg);
     }
 
+    fn is_kind_of(&self, t: &WithSpan<Token>, target: Token) -> bool {
+        *t.get_value() == target
+    }
+
     pub fn is_match(&mut self, token: Token) -> bool {
         match self.is_kind_of(self.current.as_ref().unwrap(), token) {
             true => {
@@ -300,9 +358,7 @@ impl<'a> Parser<'a> {
 
         eprint!(": {}\n", msg)
     }
-    fn is_kind_of(&self, t: &WithSpan<Token>, target: Token) -> bool {
-        *t.get_value() == target
-    }
+
     pub fn pick_str(&self, token: &WithSpan<Token>) -> &str {
         let start = token.get_start();
         let end = token.get_end();

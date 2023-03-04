@@ -5,6 +5,7 @@ mod debug;
 mod interner;
 mod interpreter;
 mod memory;
+mod object;
 mod opcode;
 mod statements;
 mod tokenize;

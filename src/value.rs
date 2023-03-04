@@ -1,10 +1,11 @@
-use crate::interner::StrId;
+use crate::{interner::StrId, object::FunId};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Value {
     Number(f64),
     Bool(bool),
     String(StrId),
+    Function(FunId),
 }
 
 pub fn value_equal(a: Value, b: Value) -> bool {
