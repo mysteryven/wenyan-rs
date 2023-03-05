@@ -357,6 +357,7 @@ pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
                 parse_variable(parser, "expect a parameter name.");
                 parser.emit_u8(opcode::DEFINE_LOCAL);
                 parser.emit_u8(0);
+                parser.emit_u8(opcode::POP);
             } else {
                 parser.advance();
             }
@@ -398,6 +399,9 @@ pub fn argument_list<'a>(parser: &'a mut Parser) -> u32 {
     while parser.is_match_literal() {
         parser.expression();
         arg_count += 1;
+        if !parser.is_match(Token::PrepositionLeft) {
+            break;
+        }
     }
 
     arg_count
