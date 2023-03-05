@@ -88,6 +88,32 @@ Output vs Online IDE
 +黃河流水鳴濺濺
 ```
 
+Function will be added into stack, and "書之" will drain values preceding the current function.
+
+```bash
+吾有一數曰五名之曰「甲」
+吾有一術名之曰「你好」是術曰
+夫「「世界，你好」」書之
+是謂 「你號」 之術也
+
+施「你號」
+```
+
+After `夫「「世界，你好」」書之`, The stack will be:
+
+```bash
+[2] <fn 你好>
+[1] Value::Number(5)
+[0] <global context> 
+```
+
+When function `你好` returns, the stack will be:
+
+```bash
+[1] Value::Number(5)
+[0] <global context> 
+```
+
 Take advantage of our own virtual machine, It has ability to report more kind of runtime errors.
 
 ```bash

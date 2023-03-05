@@ -7,7 +7,7 @@ use crate::{
     memory::free_object,
     object::{FunId, Function},
     opcode,
-    value::{is_falsy, is_less, value_equal, Value},
+    value::{is_falsy, is_function, is_less, value_equal, Value},
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -71,9 +71,6 @@ impl<'a> VM<'a> {
     pub fn offset(&self) -> usize {
         unsafe { self.ip().offset_from(self.chunk().code().as_ptr()) as usize }
     }
-    pub fn local_stack(&self) -> &Vec<Value> {
-        &self.local_stack
-    }
     pub fn peek(&self, distance: usize) -> Option<&Value> {
         self.stack.get(self.stack.len() - 1 - distance)
     }
@@ -114,11 +111,6 @@ impl<'a> VM<'a> {
             let byte = self.read_byte();
             match byte {
                 opcode::RETURN => {
-                    if mode == VMMode::Debug {
-                        println!("---");
-                        println!("Debug Info end");
-                        println!("---");
-                    }
                     let value = self.stack.pop();
                     let local_len = self.runtime.current_frame().local_slot_begin();
                     let stack_len = self.runtime.current_frame().slot_begin();
@@ -127,6 +119,16 @@ impl<'a> VM<'a> {
 
                     if self.runtime.frames().len() == 0 {
                         self.stack.pop();
+
+                        if mode == VMMode::Debug {
+                            println!("");
+                            println!("---");
+                            println!("Debug Info end");
+                            println!("---");
+                        }
+
+                        self.show_stack();
+
                         return InterpretStatus::Ok;
                     }
 
@@ -138,8 +140,6 @@ impl<'a> VM<'a> {
                     }
 
                     self.stack.push(value.unwrap());
-
-                    return InterpretStatus::Ok;
                 }
                 opcode::CONSTANT => {
                     if let Some(value) = self.read_constant().map(|x| x.clone()) {
@@ -147,7 +147,20 @@ impl<'a> VM<'a> {
                     }
                 }
                 opcode::PRINT => {
-                    let vec = self.stack.drain(1..).collect::<Vec<Value>>();
+                    let mut vec = vec![];
+
+                    loop {
+                        if let Some(val) = self.stack.last() {
+                            if !is_function(val) {
+                                vec.push(self.stack.pop().unwrap());
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+
                     let str_vec = vec
                         .iter()
                         .map(|x| self.format_value(x))

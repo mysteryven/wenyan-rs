@@ -31,3 +31,10 @@ pub fn is_falsy(value: &Value) -> bool {
         _ => false,
     }
 }
+
+pub fn is_function(value: &Value) -> bool {
+    match value {
+        Value::Function(_) => true,
+        _ => false,
+    }
+}

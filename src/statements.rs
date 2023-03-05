@@ -329,15 +329,15 @@ pub fn fun_statement<'a>(parser: &'a mut Parser) {
     parser.advance();
     parser.consume(Token::NameIs, "expect '名之曰' in function declaration.");
     let global = parse_variable(parser, "expect function name.");
-
     function(parser, FunctionType::Function);
 
-    parser.emit_bytes(opcode::DEFINE_GLOBAL, global.unwrap());
+    parser.define_global(global.unwrap());
+    parser.emit_u8(opcode::POP);
 }
 
 pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
     parser.enter_compiler(kind);
-    parser.begin_scope();
+    parser.begin_scope(); // not need end scope.
 
     if parser.is_match(Token::FunctionReady) {
         parser.consume(Token::FunctionArg, "expect '必先得'");
@@ -357,6 +357,7 @@ pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
     parser.consume(Token::FunctionBodyBegin, "expect '是術曰'.");
     block_statement(parser, [Token::FunctionEnd1]);
 
+    parser.consume(Token::FunctionEnd1, "expect '是謂'");
     parser.consume(Token::Identifier, "expect identifier in function end.");
     parser.consume(Token::FunctionEnd2, "expect '之術也' in function end.");
 
@@ -373,12 +374,14 @@ pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
 pub fn call_statement<'a>(parser: &'a mut Parser) {
     parser.advance();
     parser.expression();
-    parser.consume(
-        Token::PrepositionRight,
-        "only support '以'' in function call now.",
-    );
+    let mut arg_count = 0;
+    if parser.is_match(Token::PrepositionRight) {
+        parser.advance();
+        arg_count = argument_list(parser);
+    } else if parser.is_match(Token::PrepositionLeft) {
+        parser.error_at_current("only support '以'' in function call now.")
+    }
 
-    let arg_count = argument_list(parser);
     parser.emit_bytes(opcode::CALL, arg_count);
 }
 

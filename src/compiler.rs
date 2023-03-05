@@ -280,6 +280,14 @@ impl<'a> Parser<'a> {
         self.emit_u8(byte1);
         self.emit_u32(byte2);
     }
+    pub fn define_global(&mut self, global: u32) {
+        self.emit_u8(opcode::DEFINE_GLOBAL);
+        self.emit_u32(global);
+        // In the normal cases, we need the top value of stack, but declare statement need reverse direction of the stack
+        // so we need to record the offset to the stack top.
+        // maybe use another opcode is better.
+        self.emit_u8(0);
+    }
     pub fn set_u32(&mut self, index: usize, byte: u32) {
         self.current_chunk_mut().overwrite_u32(index, byte);
     }
