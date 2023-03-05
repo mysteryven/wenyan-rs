@@ -4,8 +4,10 @@ A bytecode interpreter for [Wenyan-lang](https://github.com/wenyan-lang/wenyan).
 
 ## Usage
 
+I make it public for my own use, it's not usable now. But you can still clone it and try it out.
+
 ```bash
-wyr path/to/filename.wy
+cargo run tests/inputs/demo.wy
 ```
 
 ## Examples
