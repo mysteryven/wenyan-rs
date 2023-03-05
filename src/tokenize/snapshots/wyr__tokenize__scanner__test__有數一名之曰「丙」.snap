@@ -1,0 +1,35 @@
+---
+source: src/tokenize/scanner.rs
+expression: tokens
+---
+- value: DeclShort
+  span:
+    start: 0
+    end: 3
+  line: 1
+- value: Type
+  span:
+    start: 3
+    end: 6
+  line: 1
+- value: Number
+  span:
+    start: 6
+    end: 9
+  line: 1
+- value: NameIs
+  span:
+    start: 9
+    end: 18
+  line: 1
+- value: Identifier
+  span:
+    start: 21
+    end: 24
+  line: 1
+- value: Eof
+  span:
+    start: 27
+    end: 27
+  line: 1
+

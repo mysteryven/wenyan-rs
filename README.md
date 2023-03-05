@@ -88,7 +88,7 @@ Output vs Online IDE
 +黃河流水鳴濺濺
 ```
 
-Function will be added into stack, and "書之" will drain values preceding the current function.
+Function will be added into stack, and "書之" will drain values produced by current function.
 
 ```bash
 吾有一數曰五名之曰「甲」

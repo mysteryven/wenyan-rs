@@ -99,7 +99,7 @@ impl Scanner {
     pub fn skip_whitespace(&mut self) {
         loop {
             match self.peek() {
-                Some(' ') | Some('\r') | Some('\t') | Some('。') | Some('、') => {
+                Some(' ') | Some('\r') | Some('\t') | Some('。') | Some('、') | Some('也') => {
                     self.advance();
                 }
                 Some('\n') => {
@@ -356,5 +356,10 @@ mod test {
     #[test]
     fn test_if() {
         generate_tokens_snapshot("若二等於二者加一以五書之云云")
+    }
+
+    #[test]
+    fn test_define() {
+        generate_tokens_snapshot("有數一名之曰「丙」")
     }
 }

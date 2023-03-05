@@ -125,9 +125,8 @@ impl<'a> VM<'a> {
                             println!("---");
                             println!("Debug Info end");
                             println!("---");
+                            self.show_stack();
                         }
-
-                        self.show_stack();
 
                         return InterpretStatus::Ok;
                     }
@@ -163,6 +162,7 @@ impl<'a> VM<'a> {
 
                     let str_vec = vec
                         .iter()
+                        .rev()
                         .map(|x| self.format_value(x))
                         .collect::<Vec<String>>();
 
@@ -336,7 +336,7 @@ impl<'a> VM<'a> {
                     self.break_points.push(ip);
                 }
                 opcode::CALL => {
-                    let arity = self.read_byte() as usize;
+                    let arity = self.read_u32() as usize;
                     let callee = self.peek(arity).map(|x| x.clone()).unwrap();
                     if !self.call_value(&callee, arity) {
                         return InterpretStatus::RuntimeError;
@@ -426,8 +426,8 @@ impl<'a> VM<'a> {
     fn call(&mut self, fun_idx: FunId, arity: usize) -> bool {
         self.runtime.begin_frame(
             fun_idx,
-            self.stack.len() - 1,
-            self.local_stack.len() - arity,
+            self.stack.len() - 1 - arity,
+            self.local_stack.len(),
         );
         true
     }

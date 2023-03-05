@@ -10,7 +10,7 @@ use crate::{
         assign_statement, binary_statement, boolean_algebra_statement, break_statement,
         call_statement, expression_statement, for_statement, for_while_statement, fun_statement,
         if_statement, name_is_statement, normal_declaration, print_statement, return_statement,
-        unary_statement,
+        short_declaration, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -189,7 +189,7 @@ impl<'a> Parser<'a> {
         }
     }
     fn short_declaration(&mut self) {
-        todo!("short declaration not implemented.")
+        short_declaration(self, self.buf);
     }
     fn normal_declaration(&mut self) {
         normal_declaration(self, self.buf)
@@ -217,15 +217,10 @@ impl<'a> Parser<'a> {
             Token::Fu => {
                 self.advance();
                 self.expression();
-                if self.is_kind_of(self.current(), Token::Identifier)
-                    || self.is_kind_of(self.current(), Token::True)
-                    || self.is_kind_of(self.current(), Token::False)
-                    || self.is_kind_of(self.current(), Token::String)
-                    || self.is_kind_of(self.current(), Token::Number)
-                {
+                if self.is_match_literal() {
                     boolean_algebra_statement(self)
                 } else {
-                    todo!("reference statement")
+                    // we don't need do anything, it has been added in stack.
                 }
             }
             Token::Loop => {
@@ -362,9 +357,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn is_literal(&self) -> bool {
+    pub fn is_match_literal(&self) -> bool {
         match self.current.as_ref().unwrap().get_value() {
-            Token::True | Token::False | Token::String | Token::Number => true,
+            Token::True | Token::False | Token::String | Token::Number | Token::Identifier => true,
             _ => false,
         }
     }
@@ -461,7 +456,10 @@ impl<'a> Parser<'a> {
             }
             Token::Identifier => self.variable(),
             Token::Prev => {} // do nothing
-            _ => self.error("Expect expression"),
+            _ => {
+                println!("{:?}", self.previous().get_value());
+                self.error("Expect expression");
+            }
         }
     }
     pub fn begin_scope(&mut self) {

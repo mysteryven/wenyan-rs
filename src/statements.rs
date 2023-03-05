@@ -1,5 +1,5 @@
 use crate::{
-    compiler::{Compiler, FunctionType, Parser},
+    compiler::{FunctionType, Parser},
     convert::hanzi2num::hanzi2num,
     opcode::{self},
     tokenize::token::Token,
@@ -149,6 +149,15 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
     } else {
         parser.error("expect a number in declaration.");
     }
+}
+
+pub fn short_declaration<'a>(parser: &mut Parser, buf: &'a str) {
+    parser.advance(); // 有
+
+    // skip strict type judgment for now
+    parser.expression();
+
+    name_is_statement(parser);
 }
 
 fn parse_variable(parser: &mut Parser, error: &str) -> Option<u32> {
@@ -375,11 +384,10 @@ pub fn call_statement<'a>(parser: &'a mut Parser) {
     parser.advance();
     parser.expression();
     let mut arg_count = 0;
-    if parser.is_match(Token::PrepositionRight) {
-        parser.advance();
+    if parser.is_match(Token::PrepositionLeft) {
         arg_count = argument_list(parser);
     } else if parser.is_match(Token::PrepositionLeft) {
-        parser.error_at_current("only support '以'' in function call now.")
+        parser.error_at_current("only support '於'' in function call now.")
     }
 
     parser.emit_bytes(opcode::CALL, arg_count);
@@ -387,7 +395,7 @@ pub fn call_statement<'a>(parser: &'a mut Parser) {
 
 pub fn argument_list<'a>(parser: &'a mut Parser) -> u32 {
     let mut arg_count: u32 = 0;
-    while parser.is_literal() {
+    while parser.is_match_literal() {
         parser.expression();
         arg_count += 1;
     }
