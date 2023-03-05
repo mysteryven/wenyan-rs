@@ -5,13 +5,13 @@ A bytecode interpreter for [Wenyan-lang](https://github.com/wenyan-lang/wenyan).
 ## Usage
 
 ```bash
-wyr path/to/file.wy
+wyr path/to/filename.wy
 ```
 
 ## Examples
 
 ```bash
-吾有一術名之曰「階乘」欲行是術必先得一數曰「甲」乃行是術曰
+吾有一術 名之曰「階乘」 欲行是術 必先得一數 曰「甲」 乃行是術曰
  若「甲」等於一者。
   乃得「甲」
  若非
@@ -75,7 +75,7 @@ Output vs Online IDE:
 +15
 ```
 
-Boolean algebra statement always get boolean.
+Boolean algebra statement always gets boolean.
 
 ```bash
 吾有一數曰五名之曰「甲」
@@ -123,9 +123,9 @@ Function will be added into stack, and "書之" will drain values produced by cu
 吾有一數曰五名之曰「甲」
 吾有一術名之曰「你好」是術曰
 夫「「世界，你好」」書之
-是謂 「你號」 之術也
+是謂 「你好」 之術也
 
-施「你號」
+施「你好」
 ```
 
 After `夫「「世界，你好」」書之`, The stack will be:
