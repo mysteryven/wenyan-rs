@@ -4,12 +4,12 @@ use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
     interpreter::Runtime,
-    object::Function,
+    object::{FunId, Function},
     opcode,
     statements::{
         assign_statement, binary_statement, boolean_algebra_statement, break_statement,
-        expression_statement, for_statement, for_while_statement, if_statement, name_is_statement,
-        normal_declaration, print_statement, unary_statement,
+        expression_statement, for_statement, for_while_statement, fun_declaration, if_statement,
+        name_is_statement, normal_declaration, print_statement, unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -31,9 +31,11 @@ impl Default for Local {
 
 type Depth = i8;
 
+#[derive(PartialEq)]
 pub enum FunctionType {
     Script,
     Function,
+    Empty,
 }
 
 pub struct Compiler {
@@ -41,6 +43,7 @@ pub struct Compiler {
     scope_depth: Depth,
     function: Function,
     fun_kind: FunctionType,
+    enclosing: Option<Box<Compiler>>,
 }
 
 impl Compiler {
@@ -53,6 +56,7 @@ impl Compiler {
             scope_depth: 0,
             function: Function::new(),
             fun_kind,
+            enclosing: None,
         })
     }
     pub fn begin_scope(&mut self) {
@@ -67,6 +71,9 @@ impl Compiler {
             depth: self.scope_depth,
         });
     }
+    pub fn set_enclosing(&mut self, enclosing: Box<Compiler>) {
+        self.enclosing = Some(enclosing);
+    }
     pub fn resolve_local(&mut self, name: String) -> Option<u32> {
         for (i, local) in self.locals.iter().enumerate().rev() {
             if local.name.as_str() == name {
@@ -75,6 +82,9 @@ impl Compiler {
         }
 
         None
+    }
+    pub fn function_mut(&mut self) -> &mut Function {
+        &mut self.function
     }
 }
 
@@ -93,6 +103,9 @@ impl<'a> Parser<'a> {
     pub fn new(buf: &'a str, runtime: &'a mut Runtime) -> Self {
         let scanner = Scanner::new(buf);
 
+        let mut compiler = Compiler::init(FunctionType::Script);
+        compiler.enclosing = Some(Compiler::init(FunctionType::Empty));
+
         Self {
             scanner,
             buf,
@@ -101,7 +114,7 @@ impl<'a> Parser<'a> {
             has_error: false,
             panic_mode: false,
             runtime,
-            current_compiler: Compiler::init(FunctionType::Script),
+            current_compiler: compiler,
         }
     }
     pub fn current_code_len(&self) -> usize {
@@ -112,6 +125,12 @@ impl<'a> Parser<'a> {
     }
     pub fn current_chunk_mut(&mut self) -> &mut Chunk {
         self.current_compiler.function.chunk_mut()
+    }
+    pub fn current_compiler(&self) -> &Compiler {
+        &self.current_compiler
+    }
+    pub fn current_compiler_mut(&mut self) -> &mut Compiler {
+        &mut self.current_compiler
     }
     pub fn compile(&mut self) -> Option<Function> {
         self.has_error = false;
@@ -127,10 +146,24 @@ impl<'a> Parser<'a> {
 
         self.end_compiler()
     }
+    pub fn enter_compiler(&mut self, fun_kind: FunctionType) {
+        let new_compiler = Compiler::init(fun_kind);
+        let old_compiler = mem::replace(&mut self.current_compiler, new_compiler);
+        self.current_compiler.set_enclosing(old_compiler);
+
+        let fn_name = self.pick_str(self.previous()).to_string();
+        self.current_compiler.function_mut().set_name(fn_name);
+    }
     pub fn end_compiler(&mut self) -> Option<Function> {
         self.emit_return();
 
-        let fun = self.get_compiled_fn();
+        let fun = if let Some(enclosing) = self.current_compiler.enclosing.take() {
+            let compiler = mem::replace(&mut self.current_compiler, enclosing);
+            let f = compiler.function;
+            Some(f)
+        } else {
+            None
+        };
 
         if self.has_error {
             None
@@ -138,17 +171,16 @@ impl<'a> Parser<'a> {
             fun
         }
     }
-    pub fn get_compiled_fn(&mut self) -> Option<Function> {
-        let empty_compiler = Compiler::init(FunctionType::Script);
-        let compiler = mem::replace(&mut self.current_compiler, empty_compiler);
-
-        Some(compiler.function)
+    pub fn add_function(&mut self, function: Function) -> FunId {
+        self.runtime.add_function(function)
     }
     pub fn declaration(&mut self) {
         if self.is_match(Token::Decl) {
             self.normal_declaration();
         } else if self.is_match(Token::DeclShort) {
             self.short_declaration()
+        } else if self.is_match(Token::Fun) {
+            self.fun_declaration();
         } else {
             self.statement();
         }
@@ -158,10 +190,13 @@ impl<'a> Parser<'a> {
         }
     }
     fn short_declaration(&mut self) {
-        todo!()
+        todo!("short declaration not implemented.")
     }
     fn normal_declaration(&mut self) {
         normal_declaration(self, self.buf)
+    }
+    fn fun_declaration(&mut self) {
+        fun_declaration(self)
     }
     pub fn statement(&mut self) {
         let current = self.current.as_ref().unwrap().get_value().clone();
@@ -230,6 +265,10 @@ impl<'a> Parser<'a> {
     pub fn emit_u32(&mut self, byte: u32) {
         let line_number = self.previous().get_line();
         self.current_chunk_mut().add_u32(byte, line_number);
+    }
+    pub fn emit_bytes(&mut self, byte1: u8, byte2: u32) {
+        self.emit_u8(byte1);
+        self.emit_u32(byte2);
     }
     pub fn set_u32(&mut self, index: usize, byte: u32) {
         self.current_chunk_mut().overwrite_u32(index, byte);

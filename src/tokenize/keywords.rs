@@ -51,6 +51,14 @@ fn get_keywords() -> Vec<(Vec<char>, Token)> {
     key_defines.push(("遍", Token::ForMid));
     key_defines.push(("乃止", Token::Break));
 
+    key_defines.push(("吾有一術", Token::Fun));
+    key_defines.push(("欲行是術", Token::FunctionReady));
+    key_defines.push(("必先得", Token::FunctionArg));
+    key_defines.push(("是術曰", Token::FunctionBodyBegin));
+    key_defines.push(("乃行是術曰", Token::FunctionBodyBegin));
+    key_defines.push(("是謂", Token::FunctionEnd1));
+    key_defines.push(("之術也", Token::FunctionEnd2));
+
     let keywords: Vec<(Vec<char>, Token)> = key_defines
         .iter()
         .map(|(str, token)| (str.chars().collect::<Vec<char>>(), token.clone()))

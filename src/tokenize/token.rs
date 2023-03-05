@@ -53,6 +53,13 @@ pub enum Token {
     And, // 中無陰乎,
     Or,  // 中有陽乎
 
+    Fun,               // 吾有一術
+    FunctionReady,     // 欲行是術
+    FunctionArg,       // 必先得
+    FunctionBodyBegin, // 是術曰
+    FunctionEnd1,      // 是謂
+    FunctionEnd2,      // 之術也
+
     Eof,
     Error(String),
 }

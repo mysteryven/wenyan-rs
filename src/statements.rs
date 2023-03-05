@@ -1,5 +1,5 @@
 use crate::{
-    compiler::Parser,
+    compiler::{Compiler, FunctionType, Parser},
     convert::hanzi2num::hanzi2num,
     opcode::{self},
     tokenize::token::Token,
@@ -292,8 +292,7 @@ pub fn for_statement<'a>(parser: &'a mut Parser) {
     let loop_start = parser.current_code_len();
 
     // 「inner_for_loop_var」大於零
-    parser.emit_u8(opcode::GET_LOCAL);
-    parser.emit_u32(slot);
+    parser.emit_bytes(opcode::GET_LOCAL, slot);
     parser.emit_constant(Value::Number(0.0));
     parser.emit_u8(opcode::GREATER);
 
@@ -305,8 +304,8 @@ pub fn for_statement<'a>(parser: &'a mut Parser) {
 
     // 減「inner_for_loop_var」以一
     // 昔之「inner_for_loop_var」今其是矣
-    parser.emit_u8(opcode::GET_LOCAL);
-    parser.emit_u32(slot);
+    parser.emit_bytes(opcode::GET_LOCAL, slot);
+
     parser.emit_constant(Value::Number(1.0));
     parser.emit_u8(opcode::SUBTRACT);
     parser.emit_u8(opcode::PREPOSITION_RIGHT);
@@ -325,4 +324,49 @@ pub fn for_statement<'a>(parser: &'a mut Parser) {
     parser.emit_u8(opcode::POP);
 
     parser.end_scope();
+}
+
+pub fn fun_declaration<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.consume(Token::NameIs, "expect '名之曰' in function declaration.");
+    let global = parse_variable(parser, "expect function name.");
+
+    function(parser, FunctionType::Function);
+
+    parser.emit_bytes(opcode::DEFINE_GLOBAL, global.unwrap());
+}
+
+pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
+    parser.enter_compiler(kind);
+    parser.begin_scope();
+
+    if parser.is_match(Token::FunctionReady) {
+        parser.consume(Token::FunctionArg, "expect '必先得'");
+
+        while !parser.check(Token::FunctionBodyBegin) {
+            if parser.is_match(Token::Is) {
+                parser.current_compiler_mut().function_mut().add_arity(1);
+                parse_variable(parser, "expect a parameter name.");
+                parser.emit_u8(opcode::DEFINE_LOCAL);
+                parser.emit_u8(0);
+            } else {
+                parser.advance();
+            }
+        }
+    }
+
+    parser.consume(Token::FunctionBodyBegin, "expect '是術曰'.");
+    block_statement(parser, [Token::FunctionEnd1]);
+
+    parser.consume(Token::Identifier, "expect identifier in function end.");
+    parser.consume(Token::FunctionEnd2, "expect '之術也' in function end.");
+
+    if let Some(function) = parser.end_compiler() {
+        let fun_id = parser.add_function(function);
+        let id = parser
+            .make_constant(Value::Function(fun_id))
+            .expect("should be able to make constant");
+
+        parser.emit_bytes(opcode::CONSTANT, id);
+    }
 }
