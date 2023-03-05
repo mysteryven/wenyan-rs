@@ -233,18 +233,16 @@ pub fn if_statement<'a>(parser: &'a mut Parser) {
     parser.emit_u8(opcode::POP);
     block_statement(parser, [Token::Else]);
 
+    let else_jump = parser.emit_jump(opcode::JUMP);
+    parser.patch_jump(then_jump);
+    parser.emit_u8(opcode::POP);
+
     if parser.check(Token::Else) {
         parser.advance();
-        let else_jump = parser.emit_jump(opcode::JUMP);
-        parser.patch_jump(then_jump);
-
-        parser.emit_u8(opcode::POP);
         block_statement(parser, []);
-        parser.patch_jump(else_jump);
-    } else {
-        parser.patch_jump(then_jump);
-        parser.emit_u8(opcode::POP);
     }
+
+    parser.patch_jump(else_jump);
 }
 
 pub fn boolean_algebra_statement<'a>(parser: &'a mut Parser) {
@@ -319,14 +317,15 @@ pub fn for_statement<'a>(parser: &'a mut Parser) {
 
     parser.emit_loop(increase_start);
     parser.patch_jump(exit_jump);
+    parser.emit_u8(opcode::POP);
+
     parser.patch_jump(break_jump);
     parser.emit_u8(opcode::DISCARD_BREAK);
-    parser.emit_u8(opcode::POP);
 
     parser.end_scope();
 }
 
-pub fn fun_declaration<'a>(parser: &'a mut Parser) {
+pub fn fun_statement<'a>(parser: &'a mut Parser) {
     parser.advance();
     parser.consume(Token::NameIs, "expect '名之曰' in function declaration.");
     let global = parse_variable(parser, "expect function name.");
@@ -369,4 +368,37 @@ pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
 
         parser.emit_bytes(opcode::CONSTANT, id);
     }
+}
+
+pub fn call_statement<'a>(parser: &'a mut Parser) {
+    parser.advance();
+    parser.expression();
+    parser.consume(
+        Token::PrepositionRight,
+        "only support '以'' in function call now.",
+    );
+
+    let arg_count = argument_list(parser);
+    parser.emit_bytes(opcode::CALL, arg_count);
+}
+
+pub fn argument_list<'a>(parser: &'a mut Parser) -> u32 {
+    let mut arg_count: u32 = 0;
+    while parser.is_literal() {
+        parser.expression();
+        arg_count += 1;
+    }
+
+    arg_count
+}
+
+pub fn return_statement(parser: &mut Parser) {
+    if parser.current_compiler().fun_kind() == FunctionType::Script {
+        parser.error_at_current("cannot return from top-level code.");
+        return;
+    }
+
+    parser.advance();
+    parser.expression();
+    parser.emit_u8(opcode::RETURN);
 }

@@ -20,9 +20,8 @@ pub fn interpret(buf: &str, mode: VMMode) -> InterpretStatus {
 
     if let Some(function) = compiler.compile() {
         let mut vm = VM::new(&mut runtime);
-        let ip = function.chunk().code().as_ptr();
-        let slot_begin = vm.local_stack().len();
-        vm.begin_frame(ip, slot_begin, function);
+        let idx = vm.add_function(function);
+        vm.setup_first_frame(idx);
         let ok = vm.run(mode);
         vm.free();
 
@@ -48,6 +47,9 @@ impl Runtime {
             current_frame: std::ptr::null_mut(),
         }
     }
+    pub fn frames(&self) -> &Vec<CallFrame> {
+        &self.frames
+    }
     pub fn current_frame(&self) -> &CallFrame {
         unsafe { &*self.current_frame }
     }
@@ -60,9 +62,15 @@ impl Runtime {
     pub fn current_chunk(&self) -> &Chunk {
         self.get_function(&self.current_frame().fun_id()).chunk()
     }
-    pub fn begin_frame(&mut self, ip: *const u8, slot_begin: usize, function: Function) -> u32 {
-        let fun_idx = self.add_function(function);
-        let frame = CallFrame::new(ip, fun_idx, slot_begin);
+    pub fn begin_frame(
+        &mut self,
+        fun_idx: FunId,
+        slot_begin: usize,
+        local_slot_begin: usize,
+    ) -> u32 {
+        let function = self.get_function(&fun_idx);
+        let ip = function.chunk().code().as_ptr();
+        let frame = CallFrame::new(ip, fun_idx, slot_begin, local_slot_begin);
 
         self.frames.push(frame);
 
@@ -106,14 +114,16 @@ pub struct CallFrame {
     ip: *const u8,
     fun_id: FunId,
     slot_begin: usize,
+    local_slot_begin: usize,
 }
 
 impl CallFrame {
-    pub fn new(ip: *const u8, fun_id: FunId, slot_begin: usize) -> Self {
+    pub fn new(ip: *const u8, fun_id: FunId, slot_begin: usize, local_slot_begin: usize) -> Self {
         Self {
             ip,
             fun_id,
             slot_begin,
+            local_slot_begin,
         }
     }
     pub fn set_ip(&mut self, ip: *const u8) {
@@ -133,5 +143,8 @@ impl CallFrame {
     }
     pub fn slot_begin(&self) -> usize {
         self.slot_begin
+    }
+    pub fn local_slot_begin(&self) -> usize {
+        self.local_slot_begin
     }
 }

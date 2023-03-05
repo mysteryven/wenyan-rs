@@ -88,7 +88,7 @@ Output vs Online IDE
 +黃河流水鳴濺濺
 ```
 
-Since take advantage of our own virtual machine, It has ability to report more kind of runtime errors.
+Take advantage of our own virtual machine, It has ability to report more kind of runtime errors.
 
 ```bash
 吾有二言曰『你』曰『好』名之曰「甲」名之曰「乙」 

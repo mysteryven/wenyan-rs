@@ -2,6 +2,7 @@ use crate::{interner::StrId, object::FunId};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Value {
+    Nil,
     Number(f64),
     Bool(bool),
     String(StrId),

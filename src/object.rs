@@ -31,4 +31,7 @@ impl Function {
     pub fn add_arity(&mut self, num: usize) {
         self.arity = self.arity + num;
     }
+    pub fn arity(&self) -> usize {
+        self.arity
+    }
 }

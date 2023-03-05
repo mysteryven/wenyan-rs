@@ -5,7 +5,7 @@ use crate::{
     interner::StrId,
     interpreter::{CallFrame, InterpretStatus, Runtime},
     memory::free_object,
-    object::Function,
+    object::{FunId, Function},
     opcode,
     value::{is_falsy, is_less, value_equal, Value},
 };
@@ -40,9 +40,15 @@ impl<'a> VM<'a> {
     pub fn frame(&self) -> &CallFrame {
         self.runtime.current_frame()
     }
-    pub fn begin_frame(&mut self, ip: *const u8, slot_begin: usize, function: Function) {
-        let fun_idx = self.runtime.begin_frame(ip, slot_begin, function);
-        self.local_stack.push(Value::Function(fun_idx));
+    pub fn add_function(&mut self, function: Function) -> FunId {
+        self.runtime.add_function(function)
+    }
+    pub fn setup_first_frame(&mut self, fun_idx: FunId) {
+        self.stack.push(Value::Function(fun_idx));
+
+        let fun_idx =
+            self.runtime
+                .begin_frame(fun_idx, self.stack.len() - 1, self.local_stack.len());
     }
     pub fn ip(&self) -> *const u8 {
         self.frame().ip()
@@ -59,8 +65,8 @@ impl<'a> VM<'a> {
     pub fn chunk(&self) -> &Chunk {
         self.runtime.chunk()
     }
-    pub fn normalize_slot(&self, slot: usize) -> usize {
-        self.frame().slot_begin() + slot
+    pub fn normalize_local_slot(&self, slot: usize) -> usize {
+        self.frame().local_slot_begin() + slot
     }
     pub fn offset(&self) -> usize {
         unsafe { self.ip().offset_from(self.chunk().code().as_ptr()) as usize }
@@ -113,6 +119,26 @@ impl<'a> VM<'a> {
                         println!("Debug Info end");
                         println!("---");
                     }
+                    let value = self.stack.pop();
+                    let local_len = self.runtime.current_frame().local_slot_begin();
+                    let stack_len = self.runtime.current_frame().slot_begin();
+
+                    self.runtime.exit_frame();
+
+                    if self.runtime.frames().len() == 0 {
+                        self.stack.pop();
+                        return InterpretStatus::Ok;
+                    }
+
+                    while self.local_stack.len() > local_len {
+                        self.local_stack.pop();
+                    }
+                    while self.stack.len() > stack_len {
+                        self.stack.pop();
+                    }
+
+                    self.stack.push(value.unwrap());
+
                     return InterpretStatus::Ok;
                 }
                 opcode::CONSTANT => {
@@ -121,14 +147,13 @@ impl<'a> VM<'a> {
                     }
                 }
                 opcode::PRINT => {
-                    let vec_str = self
-                        .stack
+                    let vec = self.stack.drain(1..).collect::<Vec<Value>>();
+                    let str_vec = vec
                         .iter()
                         .map(|x| self.format_value(x))
                         .collect::<Vec<String>>();
 
-                    println!("{}", vec_str.join(" "));
-                    self.stack.clear();
+                    println!("{}", str_vec.join(" "));
                 }
                 opcode::POP => {
                     self.stack.pop();
@@ -149,6 +174,7 @@ impl<'a> VM<'a> {
                         self.stack.push(Value::Bool(b))
                     }
                 }
+                opcode::NIL => self.stack.push(Value::Nil),
                 opcode::TRUE => self.stack.push(Value::Bool(true)),
                 opcode::FALSE => self.stack.push(Value::Bool(false)),
                 opcode::EQUAL_EQUAL => {
@@ -216,14 +242,14 @@ impl<'a> VM<'a> {
                 }
                 opcode::GET_LOCAL => {
                     let slot = self.read_u32() as usize;
-                    let value = self.local_stack.get(self.normalize_slot(slot));
+                    let value = self.local_stack.get(self.normalize_local_slot(slot));
                     if let Some(value) = value {
                         self.stack.push(value.clone());
                     }
                 }
                 opcode::SET_LOCAL => {
                     let mut slot = self.read_u32() as usize;
-                    slot = self.normalize_slot(slot);
+                    slot = self.normalize_local_slot(slot);
 
                     self.local_stack.get_mut(slot).map(|x| {
                         let value = self.stack.pop();
@@ -296,6 +322,13 @@ impl<'a> VM<'a> {
                     let ip = unsafe { self.ip().add(offset as usize) };
                     self.break_points.push(ip);
                 }
+                opcode::CALL => {
+                    let arity = self.read_byte() as usize;
+                    let callee = self.peek(arity).map(|x| x.clone()).unwrap();
+                    if !self.call_value(&callee, arity) {
+                        return InterpretStatus::RuntimeError;
+                    }
+                }
                 _ => {}
             }
         }
@@ -357,8 +390,39 @@ impl<'a> VM<'a> {
             self.sub_ip((offset + 1) as usize) // self.ip is point to next opcode
         }
     }
+    fn call_value(&mut self, callee: &Value, arity: usize) -> bool {
+        match callee {
+            Value::Function(idx) => {
+                let function = self.runtime.get_function(idx);
+                if arity != function.arity() {
+                    self.runtime_error(
+                        format!("expected {} arguments but got {}.", function.arity(), arity)
+                            .as_str(),
+                    );
+                    return false;
+                }
+
+                self.call(*idx, arity)
+            }
+            _ => {
+                self.runtime_error("can only call functions and classes.");
+                false
+            }
+        }
+    }
+    fn call(&mut self, fun_idx: FunId, arity: usize) -> bool {
+        self.runtime.begin_frame(
+            fun_idx,
+            self.stack.len() - 1,
+            self.local_stack.len() - arity,
+        );
+        true
+    }
     fn format_value(&self, value: &Value) -> String {
         match value {
+            Value::Nil => {
+                format!("undefined")
+            }
             Value::Bool(boolean) => {
                 format!("{}", boolean)
             }
@@ -452,6 +516,9 @@ impl<'a> VM<'a> {
             opcode::MULTIPLY => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_MULTIPLY")
             }
+            opcode::NIL => {
+                self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_NIL")
+            }
             opcode::TRUE => {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_TRUE")
             }
@@ -517,6 +584,7 @@ impl<'a> VM<'a> {
                 self.disassemble_simple_instruction(&mut opcode_metadata, offset, "OP_BREAK")
             }
             opcode::RECORD_BREAK => self.jump_instruction(1, offset, "OP_RECORD_BREAK"),
+            opcode::CALL => self.byte_instruction(&mut opcode_metadata, offset, "OP_CALL"),
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());
@@ -549,6 +617,14 @@ impl<'a> VM<'a> {
         print!("{:08} -> {:08}", offset, offset as isize + jump + 5);
 
         return offset + 5;
+    }
+
+    pub fn byte_instruction(&self, _line: &mut String, offset: usize, name: &str) -> usize {
+        print!(" {:<20}", name);
+        let slot = self.chunk().get_u32(offset + 1);
+        print!(" {:08}", slot);
+
+        offset + 5
     }
 
     pub fn constant_instruction(&self, _line: &mut String, offset: usize, name: &str) -> usize {

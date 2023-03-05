@@ -8,8 +8,9 @@ use crate::{
     opcode,
     statements::{
         assign_statement, binary_statement, boolean_algebra_statement, break_statement,
-        expression_statement, for_statement, for_while_statement, fun_declaration, if_statement,
-        name_is_statement, normal_declaration, print_statement, unary_statement,
+        call_statement, expression_statement, for_statement, for_while_statement, fun_statement,
+        if_statement, name_is_statement, normal_declaration, print_statement, return_statement,
+        unary_statement,
     },
     tokenize::{position::WithSpan, scanner::Scanner, token::Token},
     value::Value,
@@ -31,7 +32,7 @@ impl Default for Local {
 
 type Depth = i8;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum FunctionType {
     Script,
     Function,
@@ -48,11 +49,8 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn init(fun_kind: FunctionType) -> Box<Self> {
-        let local = Local::default();
-        let locals = vec![local];
-
         Box::new(Self {
-            locals,
+            locals: vec![],
             scope_depth: 0,
             function: Function::new(),
             fun_kind,
@@ -85,6 +83,9 @@ impl Compiler {
     }
     pub fn function_mut(&mut self) -> &mut Function {
         &mut self.function
+    }
+    pub fn fun_kind(&self) -> FunctionType {
+        self.fun_kind
     }
 }
 
@@ -179,8 +180,6 @@ impl<'a> Parser<'a> {
             self.normal_declaration();
         } else if self.is_match(Token::DeclShort) {
             self.short_declaration()
-        } else if self.is_match(Token::Fun) {
-            self.fun_declaration();
         } else {
             self.statement();
         }
@@ -195,8 +194,14 @@ impl<'a> Parser<'a> {
     fn normal_declaration(&mut self) {
         normal_declaration(self, self.buf)
     }
-    fn fun_declaration(&mut self) {
-        fun_declaration(self)
+    fn fun_statement(&mut self) {
+        fun_statement(self)
+    }
+    pub fn call_statement(&mut self) {
+        call_statement(self)
+    }
+    pub fn return_statement(&mut self) {
+        return_statement(self)
     }
     pub fn statement(&mut self) {
         let current = self.current.as_ref().unwrap().get_value().clone();
@@ -228,6 +233,9 @@ impl<'a> Parser<'a> {
             }
             Token::For => for_statement(self),
             Token::Break => break_statement(self),
+            Token::Fun => self.fun_statement(),
+            Token::Call => self.call_statement(),
+            Token::Return => self.return_statement(),
             _ => expression_statement(self),
         }
     }
@@ -240,6 +248,8 @@ impl<'a> Parser<'a> {
             match current {
                 Token::Decl
                 | Token::DeclShort
+                | Token::Fun
+                | Token::Call
                 | Token::Print
                 | Token::If
                 | Token::Fu
@@ -274,6 +284,7 @@ impl<'a> Parser<'a> {
         self.current_chunk_mut().overwrite_u32(index, byte);
     }
     fn emit_return(&mut self) {
+        self.emit_u8(opcode::NIL);
         self.emit_u8(opcode::RETURN);
     }
     pub fn emit_constant(&mut self, value: Value) {
@@ -342,6 +353,14 @@ impl<'a> Parser<'a> {
             false => false,
         }
     }
+
+    pub fn is_literal(&self) -> bool {
+        match self.current.as_ref().unwrap().get_value() {
+            Token::True | Token::False | Token::String | Token::Number => true,
+            _ => false,
+        }
+    }
+
     pub fn check(&self, token: Token) -> bool {
         self.is_kind_of(self.current.as_ref().unwrap(), token)
     }

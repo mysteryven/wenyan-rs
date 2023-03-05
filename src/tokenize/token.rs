@@ -59,6 +59,8 @@ pub enum Token {
     FunctionBodyBegin, // 是術曰
     FunctionEnd1,      // 是謂
     FunctionEnd2,      // 之術也
+    Call,              // 施
+    Return,            // 乃得
 
     Eof,
     Error(String),

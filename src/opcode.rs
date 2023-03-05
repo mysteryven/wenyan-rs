@@ -29,3 +29,6 @@ pub const LOOP: u8 = 29;
 pub const BREAK: u8 = 30;
 pub const RECORD_BREAK: u8 = 31;
 pub const DISCARD_BREAK: u8 = 32;
+
+pub const CALL: u8 = 33;
+pub const NIL: u8 = 34;
