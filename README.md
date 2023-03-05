@@ -5,12 +5,37 @@ A bytecode interpreter for [Wenyan-lang](https://github.com/wenyan-lang/wenyan).
 ## Usage
 
 ```bash
-cargo run tests/inputs/for-enum-statement.wy
+wyr path/to/file.wy
 ```
+
+## Examples
+
+```bash
+吾有一術名之曰「階乘」欲行是術必先得一數曰「甲」乃行是術曰
+ 若「甲」等於一者。
+  乃得「甲」
+ 若非
+  減「甲」以一名之曰「乙」
+  施「階乘」於「乙」名之曰「丙」
+  乘「丙」以「甲」。名之曰「丁」
+  乃得「丁」
+ 云云
+是謂「階乘」之術也
+
+施「階乘」於五書之
+```
+
+Output:
+
+```bash
+120
+```
+
+This project are still work in progress, many features are not implemented yet. You can see more supported examples in [examples](./tests/inputs/) folder.
 
 ## Differences
 
-The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, but some of my rules may be more strict for ease of implementation.
+The [Online IDE](https://ide.wy-lang.org/) has many friendly enhances, some of my rules may be more strict for ease of implementation.
 
 Variable need to be wrapped with single quote.
 
@@ -88,6 +113,10 @@ Output vs Online IDE
 +黃河流水鳴濺濺
 ```
 
+Treats '也' as kind of whitespace, you can use it to make code more readable, but can't use it as close of block.
+
+```bash
+
 Function will be added into stack, and "書之" will drain values produced by current function.
 
 ```bash
@@ -129,7 +158,7 @@ Output:
 
 ## Future Work
 
-There are still some features not implemented, part of them are listed in [this issue](https://github.com/mysteryven/wenyan-rs/issues/1).
+There are still many features not implemented! Part of them are listed in [this issue](https://github.com/mysteryven/wenyan-rs/issues/1).
 
 ## Credits
 
