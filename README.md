@@ -33,7 +33,7 @@ Output:
 120
 ```
 
-This project are still work in progress, many features are not implemented yet. You can see more supported examples in [examples](./tests/inputs/) folder.
+This project are still work in progress, many features are not implemented yet. You can see more supported examples in [inputs](./tests/inputs/) folder.
 
 ## Differences
 
@@ -116,8 +116,6 @@ Output vs Online IDE
 ```
 
 Treats '也' as kind of whitespace, you can use it to make code more readable, but can't use it as close of block.
-
-```bash
 
 Function will be added into stack, and "書之" will drain values produced by current function.
 

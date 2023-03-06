@@ -1,11 +1,16 @@
 [package]
-name = "wyr"
+name = "wyw"
+keywords = ["wenyan", "bytecode", "lox"]
+homepage = "https://github.com/mysteryven/wenyan-rs"
+repository = "https://github.com/mysteryven/wenyan-rs"
+readme = "README.md"
 version = "0.1.0"
 authors = ["wenzhe <mysteryven@gmail.com>"]
 edition = "2021"
-description = "A bytecode interpreter implemented in Rust for wenyan lang"
+description = "A bytecode interpreter for Wenyan lang"
 license = "MIT"
-repository = "https://github.com/mysteryven/wenyan-rs"
+categories = ["command-line-utilities"]
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
