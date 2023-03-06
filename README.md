@@ -4,11 +4,15 @@ A bytecode interpreter for [Wenyan-lang](https://github.com/wenyan-lang/wenyan).
 
 ## Usage
 
-I make it public for my own use, it's not usable now. But you can still clone it and try it out.
-
 ```bash
-cargo run tests/inputs/demo.wy
+wyw [file]
 ```
+
+## Install
+
+### Manually
+
+If you are Mac user, download binary file from the release page, and follow this [blog](https://zwbetz.com/how-to-add-a-binary-to-your-path-on-macos-linux-windows/#macos-and-linux-cli) to add it to your path. If you are noticed about "can’t be opened because Apple cannot check it for malicious software.", you can follow this [blog](https://support.apple.com/en-us/HT202491) to allow it.
 
 ## Examples
 
