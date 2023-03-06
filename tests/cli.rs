@@ -6,7 +6,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn run(input_file: &str, expected_file: &str) -> TestResult {
     let expected = fs::read_to_string(expected_file)?;
-    Command::cargo_bin("wyr")?
+    Command::cargo_bin("wyw")?
         .arg(input_file)
         .assert()
         .success()

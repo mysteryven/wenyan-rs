@@ -11,6 +11,10 @@ description = "A bytecode interpreter for Wenyan lang"
 license = "MIT"
 categories = ["command-line-utilities"]
 
+[[bin]]
+path = "src/main.rs"
+name = "wyw"
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
