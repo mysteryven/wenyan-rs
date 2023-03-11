@@ -1,6 +1,7 @@
 use crate::chunk::Chunk;
 
 pub type FunId = u32;
+pub type ClosureId = u32;
 
 pub struct Function {
     arity: usize,
@@ -33,5 +34,33 @@ impl Function {
     }
     pub fn arity(&self) -> usize {
         self.arity
+    }
+}
+
+pub struct UpValue {
+    pub index: usize,
+    pub is_local: bool,
+}
+
+pub struct Closure {
+    function: Function,
+    up_values: Vec<UpValue>,
+}
+
+impl Closure {
+    pub fn new(function: Function) -> Self {
+        Self {
+            function,
+            up_values: Vec::new(),
+        }
+    }
+    pub fn function(&self) -> &Function {
+        &self.function
+    }
+    pub fn up_values(&self) -> &Vec<UpValue> {
+        &self.up_values
+    }
+    pub fn up_values_mut(&mut self) -> &mut Vec<UpValue> {
+        &mut self.up_values
     }
 }

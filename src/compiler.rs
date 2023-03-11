@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     convert::hanzi2num::hanzi2num,
     interpreter::Runtime,
-    object::{FunId, Function},
+    object::{ClosureId, Function},
     opcode,
     statements::{
         assign_statement, binary_statement, boolean_algebra_statement, break_statement,
@@ -133,7 +133,7 @@ impl<'a> Parser<'a> {
     pub fn current_compiler_mut(&mut self) -> &mut Compiler {
         &mut self.current_compiler
     }
-    pub fn compile(&mut self) -> Option<Function> {
+    pub fn compile(&mut self) -> Option<ClosureId> {
         self.has_error = false;
         self.panic_mode = false;
 
@@ -145,7 +145,13 @@ impl<'a> Parser<'a> {
 
         self.consume(Token::Eof, "Expect end of expression");
 
-        self.end_compiler()
+        let function = self.end_compiler();
+
+        if let Some(function) = function {
+            return Some(self.runtime.add_closure(function));
+        }
+
+        None
     }
     pub fn enter_compiler(&mut self, fun_kind: FunctionType) {
         let new_compiler = Compiler::init(fun_kind);
@@ -172,8 +178,8 @@ impl<'a> Parser<'a> {
             fun
         }
     }
-    pub fn add_function(&mut self, function: Function) -> FunId {
-        self.runtime.add_function(function)
+    pub fn add_closure(&mut self, fun: Function) -> ClosureId {
+        self.runtime.add_closure(fun)
     }
     pub fn declaration(&mut self) {
         if self.is_match(Token::Decl) {

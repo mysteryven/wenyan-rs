@@ -5,9 +5,9 @@ use crate::{
     interner::StrId,
     interpreter::{CallFrame, InterpretStatus, Runtime},
     memory::free_object,
-    object::{FunId, Function},
+    object::{Closure, ClosureId, FunId, Function},
     opcode,
-    value::{is_falsy, is_function, is_less, value_equal, Value},
+    value::{is_falsy, is_function_or_closure, is_less, value_equal, Value},
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -40,15 +40,11 @@ impl<'a> VM<'a> {
     pub fn frame(&self) -> &CallFrame {
         self.runtime.current_frame()
     }
-    pub fn add_function(&mut self, function: Function) -> FunId {
-        self.runtime.add_function(function)
-    }
-    pub fn setup_first_frame(&mut self, fun_idx: FunId) {
-        self.stack.push(Value::Function(fun_idx));
+    pub fn setup_first_frame(&mut self, closure_id: ClosureId) {
+        self.stack.push(Value::Closure(closure_id));
 
-        let fun_idx =
-            self.runtime
-                .begin_frame(fun_idx, self.stack.len() - 1, self.local_stack.len());
+        self.runtime
+            .begin_frame(closure_id, self.stack.len() - 1, self.local_stack.len());
     }
     pub fn ip(&self) -> *const u8 {
         self.frame().ip()
@@ -63,7 +59,7 @@ impl<'a> VM<'a> {
         self.frame_mut().sub_ip(offset);
     }
     pub fn chunk(&self) -> &Chunk {
-        self.runtime.chunk()
+        self.runtime.current_chunk()
     }
     pub fn normalize_local_slot(&self, slot: usize) -> usize {
         self.frame().local_slot_begin() + slot
@@ -150,7 +146,7 @@ impl<'a> VM<'a> {
 
                     loop {
                         if let Some(val) = self.stack.last() {
-                            if !is_function(val) {
+                            if !is_function_or_closure(val) {
                                 vec.push(self.stack.pop().unwrap());
                             } else {
                                 break;
@@ -405,12 +401,11 @@ impl<'a> VM<'a> {
     }
     fn call_value(&mut self, callee: &Value, arity: usize) -> bool {
         match callee {
-            Value::Function(idx) => {
-                let function = self.runtime.get_function(idx);
-                if arity != function.arity() {
+            Value::Closure(idx) => {
+                let fun = self.runtime.get_closure(idx).function();
+                if arity != fun.arity() {
                     self.runtime_error(
-                        format!("expected {} arguments but got {}.", function.arity(), arity)
-                            .as_str(),
+                        format!("expected {} arguments but got {}.", fun.arity(), arity).as_str(),
                     );
                     return false;
                 }
@@ -423,9 +418,9 @@ impl<'a> VM<'a> {
             }
         }
     }
-    fn call(&mut self, fun_idx: FunId, arity: usize) -> bool {
+    fn call(&mut self, closure_idx: ClosureId, arity: usize) -> bool {
         self.runtime.begin_frame(
-            fun_idx,
+            closure_idx,
             self.stack.len() - 1 - arity,
             self.local_stack.len(),
         );
@@ -445,12 +440,16 @@ impl<'a> VM<'a> {
             Value::String(str) => {
                 format!("{}", self.runtime.interner().lookup(*str))
             }
-            Value::Function(idx) => {
-                let name = self.runtime.get_function(idx).name();
+            Value::Closure(idx) => {
+                let name = self.runtime.get_closure(idx).function().name();
+
                 format!(
                     "<fn> {}",
                     if name == "" { "<global context>" } else { name }
                 )
+            }
+            Value::Function(_) => {
+                panic!("unreachable")
             }
         }
     }
@@ -598,6 +597,14 @@ impl<'a> VM<'a> {
             }
             opcode::RECORD_BREAK => self.jump_instruction(1, offset, "OP_RECORD_BREAK"),
             opcode::CALL => self.byte_instruction(&mut opcode_metadata, offset, "OP_CALL"),
+            opcode::CLOSURE => {
+                print!(" {:<20}", "OP_CLOSURE");
+                let constant = self.chunk().get_u32(offset + 1);
+                print!(" {:08}", constant);
+                let value = self.chunk().constants().get(constant as usize).unwrap();
+                print!(" {}", self.format_value(value));
+                offset + 5
+            }
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());

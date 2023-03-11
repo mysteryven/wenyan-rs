@@ -7,7 +7,7 @@ pub struct Debugger<'a> {
 impl<'a> Debugger<'a> {
     pub fn new(runtime: &'a Runtime) -> Self {
         Self {
-            chunk: runtime.chunk(),
+            chunk: runtime.current_chunk(),
         }
     }
     pub fn from(chunk: &'a Chunk) -> Self {

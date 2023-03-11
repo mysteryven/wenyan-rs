@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     compiler::Parser,
     interner::Interner,
-    object::{FunId, Function},
+    object::{Closure, ClosureId, FunId, Function},
     vm::{VMMode, VM},
 };
 
@@ -18,10 +18,9 @@ pub fn interpret(buf: &str, mode: VMMode) -> InterpretStatus {
     let mut runtime = Runtime::new();
     let mut compiler = Parser::new(buf, &mut runtime);
 
-    if let Some(function) = compiler.compile() {
+    if let Some(closure_id) = compiler.compile() {
         let mut vm = VM::new(&mut runtime);
-        let idx = vm.add_function(function);
-        vm.setup_first_frame(idx);
+        vm.setup_first_frame(closure_id);
         let ok = vm.run(mode);
         vm.free();
 
@@ -33,7 +32,7 @@ pub fn interpret(buf: &str, mode: VMMode) -> InterpretStatus {
 
 pub struct Runtime {
     interner: Interner,
-    functions: HashMap<u32, Function>,
+    closures: HashMap<FunId, Closure>,
     frames: Vec<CallFrame>,
     current_frame: *mut CallFrame,
 }
@@ -42,7 +41,7 @@ impl Runtime {
     pub fn new() -> Self {
         Self {
             interner: Interner::new(),
-            functions: HashMap::new(),
+            closures: HashMap::new(),
             frames: vec![],
             current_frame: std::ptr::null_mut(),
         }
@@ -56,28 +55,27 @@ impl Runtime {
     pub fn current_frame_mut(&self) -> &mut CallFrame {
         unsafe { &mut *self.current_frame }
     }
-    pub fn chunk(&self) -> &Chunk {
-        self.get_function(&self.current_frame().fun_id()).chunk()
-    }
     pub fn current_chunk(&self) -> &Chunk {
-        self.get_function(&self.current_frame().fun_id()).chunk()
+        self.get_closure(&self.current_frame().closure_id())
+            .function()
+            .chunk()
     }
     pub fn begin_frame(
         &mut self,
-        fun_idx: FunId,
+        closure_idx: ClosureId,
         slot_begin: usize,
         local_slot_begin: usize,
     ) -> u32 {
-        let function = self.get_function(&fun_idx);
-        let ip = function.chunk().code().as_ptr();
-        let frame = CallFrame::new(ip, fun_idx, slot_begin, local_slot_begin);
+        let closure = self.get_closure(&closure_idx);
+        let ip = closure.function().chunk().code().as_ptr();
+        let frame = CallFrame::new(ip, closure_idx, slot_begin, local_slot_begin);
 
         self.frames.push(frame);
 
         unsafe {
             self.current_frame = self.frames.as_mut_ptr().add(self.frames.len() - 1);
         }
-        fun_idx
+        closure_idx
     }
     pub fn exit_frame(&mut self) {
         if self.frames.pop().is_some() {
@@ -89,13 +87,14 @@ impl Runtime {
         }
     }
 
-    pub fn add_function(&mut self, func: Function) -> u32 {
-        let id = self.functions.len() as u32;
-        self.functions.insert(id, func);
+    pub fn add_closure(&mut self, fun: Function) -> u32 {
+        let closure = Closure::new(fun);
+        let id = self.closures.len() as u32;
+        self.closures.insert(id, closure);
         id
     }
-    pub fn get_function(&self, id: &u32) -> &Function {
-        self.functions.get(id).expect("Function not found.")
+    pub fn get_closure(&self, id: &u32) -> &Closure {
+        self.closures.get(id).expect("Function not found.")
     }
 
     pub fn interner(&self) -> &Interner {
@@ -112,16 +111,21 @@ impl Runtime {
 
 pub struct CallFrame {
     ip: *const u8,
-    fun_id: FunId,
+    closure_id: FunId,
     slot_begin: usize,
     local_slot_begin: usize,
 }
 
 impl CallFrame {
-    pub fn new(ip: *const u8, fun_id: FunId, slot_begin: usize, local_slot_begin: usize) -> Self {
+    pub fn new(
+        ip: *const u8,
+        closure_id: FunId,
+        slot_begin: usize,
+        local_slot_begin: usize,
+    ) -> Self {
         Self {
             ip,
-            fun_id,
+            closure_id,
             slot_begin,
             local_slot_begin,
         }
@@ -138,8 +142,8 @@ impl CallFrame {
     pub fn ip(&self) -> *const u8 {
         self.ip
     }
-    pub fn fun_id(&self) -> FunId {
-        self.fun_id
+    pub fn closure_id(&self) -> FunId {
+        self.closure_id
     }
     pub fn slot_begin(&self) -> usize {
         self.slot_begin

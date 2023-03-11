@@ -1,4 +1,7 @@
-use crate::{interner::StrId, object::FunId};
+use crate::{
+    interner::StrId,
+    object::{ClosureId, FunId},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Value {
@@ -7,6 +10,7 @@ pub enum Value {
     Bool(bool),
     String(StrId),
     Function(FunId),
+    Closure(ClosureId),
 }
 
 pub fn value_equal(a: Value, b: Value) -> bool {
@@ -32,9 +36,9 @@ pub fn is_falsy(value: &Value) -> bool {
     }
 }
 
-pub fn is_function(value: &Value) -> bool {
+pub fn is_function_or_closure(value: &Value) -> bool {
     match value {
-        Value::Function(_) => true,
+        Value::Function(_) | Value::Closure(_) => true,
         _ => false,
     }
 }

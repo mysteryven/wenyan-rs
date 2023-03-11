@@ -372,9 +372,9 @@ pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
     parser.consume(Token::FunctionEnd2, "expect '之術也' in function end.");
 
     if let Some(function) = parser.end_compiler() {
-        let fun_id = parser.add_function(function);
+        let closure_id = parser.add_closure(function);
         let id = parser
-            .make_constant(Value::Function(fun_id))
+            .make_constant(Value::Closure(closure_id))
             .expect("should be able to make constant");
 
         parser.emit_bytes(opcode::CONSTANT, id);
