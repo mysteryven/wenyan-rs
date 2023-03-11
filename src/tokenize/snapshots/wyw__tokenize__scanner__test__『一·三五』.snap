@@ -1,0 +1,15 @@
+---
+source: src/tokenize/scanner.rs
+expression: tokens
+---
+- value: String
+  span:
+    start: 3
+    end: 14
+  line: 1
+- value: Eof
+  span:
+    start: 17
+    end: 17
+  line: 1
+

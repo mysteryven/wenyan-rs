@@ -1,0 +1,26 @@
+---
+source: src/tokenize/scanner.rs
+expression: tokens
+---
+- value: Decl
+  span:
+    start: 0
+    end: 6
+  line: 1
+- value: Number
+  span:
+    start: 6
+    end: 9
+  line: 1
+- value:
+    Error: "Unexpected character, maybe you need use 「」 or 『』 to wrap it."
+  span:
+    start: 9
+    end: 12
+  line: 1
+- value: Eof
+  span:
+    start: 12
+    end: 12
+  line: 1
+

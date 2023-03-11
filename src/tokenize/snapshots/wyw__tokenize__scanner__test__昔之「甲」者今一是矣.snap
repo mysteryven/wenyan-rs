@@ -1,0 +1,40 @@
+---
+source: src/tokenize/scanner.rs
+expression: tokens
+---
+- value: AssignFrom
+  span:
+    start: 0
+    end: 6
+  line: 1
+- value: Identifier
+  span:
+    start: 9
+    end: 12
+  line: 1
+- value: Conjunction
+  span:
+    start: 15
+    end: 18
+  line: 1
+- value: AssignTo
+  span:
+    start: 18
+    end: 21
+  line: 1
+- value: Number
+  span:
+    start: 21
+    end: 24
+  line: 1
+- value: Sure
+  span:
+    start: 24
+    end: 30
+  line: 1
+- value: Eof
+  span:
+    start: 30
+    end: 30
+  line: 1
+

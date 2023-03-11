@@ -1,0 +1,15 @@
+---
+source: src/tokenize/scanner.rs
+expression: tokens
+---
+- value: Identifier
+  span:
+    start: 3
+    end: 6
+  line: 1
+- value: Eof
+  span:
+    start: 9
+    end: 9
+  line: 1
+
