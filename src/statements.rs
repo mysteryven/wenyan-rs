@@ -151,7 +151,7 @@ pub fn normal_declaration<'a>(parser: &'a mut Parser, buf: &'a str) {
     }
 }
 
-pub fn short_declaration<'a>(parser: &mut Parser, buf: &'a str) {
+pub fn short_declaration<'a>(parser: &mut Parser) {
     parser.advance(); // 有
 
     // skip strict type judgment for now

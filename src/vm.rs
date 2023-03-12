@@ -5,7 +5,7 @@ use crate::{
     interner::StrId,
     interpreter::{CallFrame, InterpretStatus, Runtime},
     memory::free_object,
-    object::{Closure, ClosureId, FunId, Function},
+    object::{ClosureId},
     opcode,
     value::{is_falsy, is_function_or_closure, is_less, value_equal, Value},
 };

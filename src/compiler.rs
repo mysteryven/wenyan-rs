@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
         }
     }
     fn short_declaration(&mut self) {
-        short_declaration(self, self.buf);
+        short_declaration(self);
     }
     fn normal_declaration(&mut self) {
         normal_declaration(self, self.buf)
