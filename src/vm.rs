@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     chunk::Chunk,
     interner::StrId,
     interpreter::{CallFrame, InterpretStatus, Runtime},
     memory::free_object,
-    object::{ClosureId},
+    object::{Closure, ClosureId, ObjUpValue},
     opcode,
     value::{is_falsy, is_function_or_closure, is_less, value_equal, Value},
 };
@@ -18,7 +18,7 @@ pub enum VMMode {
 
 pub struct VM<'a> {
     stack: Vec<Value>,
-    local_stack: Vec<Value>,
+    local_stack: Vec<Rc<Value>>,
     runtime: &'a mut Runtime,
     globals: HashMap<String, Value>,
     break_points: Vec<*const u8>,
@@ -39,6 +39,10 @@ impl<'a> VM<'a> {
     }
     pub fn frame(&self) -> &CallFrame {
         self.runtime.current_frame()
+    }
+    pub fn get_closure(&self) -> &Closure {
+        let closure_id = self.frame().closure_id();
+        self.runtime.get_closure(&closure_id)
     }
     pub fn setup_first_frame(&mut self, closure_id: ClosureId) {
         self.stack.push(Value::Closure(closure_id));
@@ -139,6 +143,26 @@ impl<'a> VM<'a> {
                 opcode::CONSTANT => {
                     if let Some(value) = self.read_constant().map(|x| x.clone()) {
                         self.stack.push(value);
+
+                        if let Value::Closure(i) = value {
+                            let closure = self.runtime.get_closure(&i);
+
+                            for i in 0..closure.up_values_count() {
+                                let is_local = self.read_byte() != 0;
+                                let index = self.read_u32() as usize;
+
+                                let up_value = if is_local {
+                                    let local_index = self.normalize_local_slot(index);
+                                    self.capture_upvalue(local_index)
+                                } else {
+                                    let up_closure_id = self.frame().closure_id();
+                                    let up_closure = self.runtime.get_closure(&up_closure_id);
+                                    up_closure.get_up_values(index)
+                                };
+
+                                closure.set_up_value(i as usize, up_value);
+                            }
+                        }
                     }
                 }
                 opcode::PRINT => {
@@ -246,14 +270,14 @@ impl<'a> VM<'a> {
                     let offset = self.read_byte() as usize;
                     let value = self.peek(offset);
                     if let Some(value) = value {
-                        self.local_stack.push(value.clone());
+                        self.local_stack.push(Rc::new(value.clone()));
                     }
                 }
                 opcode::GET_LOCAL => {
                     let slot = self.read_u32() as usize;
                     let value = self.local_stack.get(self.normalize_local_slot(slot));
                     if let Some(value) = value {
-                        self.stack.push(value.clone());
+                        self.stack.push(**value);
                     }
                 }
                 opcode::SET_LOCAL => {
@@ -263,7 +287,7 @@ impl<'a> VM<'a> {
                     self.local_stack.get_mut(slot).map(|x| {
                         let value = self.stack.pop();
                         if let Some(value) = value {
-                            *x = value;
+                            **x = value;
                         }
                     });
                 }
@@ -336,6 +360,20 @@ impl<'a> VM<'a> {
                     let callee = self.peek(arity).map(|x| x.clone()).unwrap();
                     if !self.call_value(&callee, arity) {
                         return InterpretStatus::RuntimeError;
+                    }
+                }
+                opcode::GET_UPVALUE => {
+                    let slot = self.read_u32() as usize;
+                    let value = self.frame().closure_id();
+                    let v = self.get_closure().get_up_values(slot).location();
+                    self.stack.push(**v);
+                }
+                opcode::SET_UPVALUE => {
+                    let slot = self.read_u32() as usize;
+                    let value = self.stack.pop();
+                    if let Some(value) = value {
+                        let v = self.get_closure().get_up_values(slot).location_mut();
+                        *Rc::get_mut(v).unwrap() = value;
                     }
                 }
                 _ => {}
@@ -449,6 +487,9 @@ impl<'a> VM<'a> {
                 )
             }
             Value::Function(_) => {
+                panic!("unreachable")
+            }
+            Value::UpValue(_) => {
                 panic!("unreachable")
             }
         }
@@ -603,7 +644,41 @@ impl<'a> VM<'a> {
                 print!(" {:08}", constant);
                 let value = self.chunk().constants().get(constant as usize).unwrap();
                 print!(" {}", self.format_value(value));
-                offset + 5
+                println!("");
+
+                let id = match value {
+                    Value::Function(id) => id,
+                    _ => panic!("not a function"),
+                };
+
+                let fun = self.runtime.get_closure(id).function();
+                let count = fun.upvalues_count() as usize;
+
+                let mut new_offset = offset + 5;
+
+                for i in 0..count as usize {
+                    print!(" {:<20}", new_offset);
+                    let is_local = self.chunk().get_u8(new_offset);
+                    new_offset += 1;
+                    let index = self.chunk().get_u32(new_offset);
+                    new_offset += 4;
+
+                    if is_local == 1 {
+                        print!(" {:<4} {:<4} {:<20}", "", "", "local");
+                    } else {
+                        print!(" {:<4} {:<4} {:<20}", "", "", "upvalue");
+                    }
+                    print!(" {:08}", index);
+                    println!("");
+                }
+
+                new_offset
+            }
+            opcode::GET_UPVALUE => {
+                self.byte_instruction(&mut opcode_metadata, offset, "OP_GET_UPVALUE")
+            }
+            opcode::SET_UPVALUE => {
+                self.byte_instruction(&mut opcode_metadata, offset, "OP_SET_UPVALUE")
             }
             _ => {
                 // this is a unknown opcode
@@ -682,5 +757,16 @@ impl<'a> VM<'a> {
         print!(" {:08} {:?} peek({})", constant, value, distance);
 
         offset + 6
+    }
+
+    fn capture_upvalue(&self, index: usize) -> Option<ObjUpValue> {
+        let local = self.local_stack.get(index);
+
+        if let Some(local) = local {
+            let v = local.clone();
+            return Some(ObjUpValue::new(v));
+        }
+
+        None
     }
 }

@@ -11,6 +11,7 @@ pub enum Value {
     String(StrId),
     Function(FunId),
     Closure(ClosureId),
+    UpValue(*const u8),
 }
 
 pub fn value_equal(a: Value, b: Value) -> bool {

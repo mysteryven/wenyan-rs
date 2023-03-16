@@ -33,3 +33,5 @@ pub const DISCARD_BREAK: u8 = 32;
 pub const CALL: u8 = 33;
 pub const NIL: u8 = 34;
 pub const CLOSURE: u8 = 35;
+pub const GET_UPVALUE: u8 = 36;
+pub const SET_UPVALUE: u8 = 37;

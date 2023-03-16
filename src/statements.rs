@@ -1,5 +1,5 @@
 use crate::{
-    compiler::{FunctionType, Parser},
+    compiler::{FunctionType, Parser, Upvalue},
     convert::hanzi2num::hanzi2num,
     opcode::{self},
     tokenize::token::Token,
@@ -378,6 +378,13 @@ pub fn function<'a>(parser: &'a mut Parser, kind: FunctionType) {
             .expect("should be able to make constant");
 
         parser.emit_bytes(opcode::CONSTANT, id);
+        let compiler = parser.current_compiler();
+
+        for i in 0..function.upvalues_count() {
+            let Upvalue { index, is_local } = compiler.get_upvalue(i).expect("upvalue");
+            parser.emit_u8(if *is_local { 1 } else { 0 });
+            parser.emit_u32(*index)
+        }
     }
 }
 

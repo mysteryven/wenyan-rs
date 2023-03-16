@@ -4,6 +4,8 @@
     "hanzi",
     "interner",
     "MULT",
+    "upvalue",
+    "upvalues",
     "wenyan"
   ]
 }

@@ -39,12 +39,18 @@ pub enum FunctionType {
     Empty,
 }
 
+pub struct Upvalue {
+    pub index: u32,
+    pub is_local: bool,
+}
+
 pub struct Compiler {
     locals: Vec<Local>,
     scope_depth: Depth,
     function: Function,
     fun_kind: FunctionType,
     enclosing: Option<Box<Compiler>>,
+    upvalues: Vec<Upvalue>,
 }
 
 impl Compiler {
@@ -55,6 +61,7 @@ impl Compiler {
             function: Function::new(),
             fun_kind,
             enclosing: None,
+            upvalues: vec![],
         })
     }
     pub fn begin_scope(&mut self) {
@@ -86,6 +93,27 @@ impl Compiler {
     }
     pub fn fun_kind(&self) -> FunctionType {
         self.fun_kind
+    }
+    pub fn is_upvalues_full(&self) -> bool {
+        self.upvalues.len() >= u32::MAX as usize
+    }
+    pub fn add_upvalue(&mut self, index: u32, is_local: bool) -> u32 {
+        let pos = self
+            .upvalues
+            .iter()
+            .position(|x| x.index == index && x.is_local == is_local);
+
+        if let Some(pos) = pos {
+            return pos as u32;
+        }
+
+        let upvalue = Upvalue { index, is_local };
+        self.upvalues.push(upvalue);
+        self.function.plus_upvalues_count();
+        self.upvalues.len() as u32 - 1
+    }
+    pub fn get_upvalue(&self, index: u32) -> Option<&Upvalue> {
+        self.upvalues.get(index as usize)
     }
 }
 
@@ -443,7 +471,16 @@ impl<'a> Parser<'a> {
 
         let (x, y) = match arg {
             Some(arg) => (opcode::GET_LOCAL, arg),
-            None => (opcode::GET_GLOBAL, self.identifier_constant().unwrap()),
+            None => {
+                let name = self.get_prev_token_string();
+                match self.resolve_upvalue(
+                    Some(Box::new(*self.current_compiler())).as_mut(),
+                    name.to_string(),
+                ) {
+                    Some(arg) => (opcode::GET_UPVALUE, arg),
+                    None => (opcode::GET_GLOBAL, self.identifier_constant().unwrap()),
+                }
+            }
         };
 
         self.emit_u8(x);
@@ -476,6 +513,38 @@ impl<'a> Parser<'a> {
     }
     pub fn resolve_local(&mut self, name: String) -> Option<u32> {
         self.current_compiler.resolve_local(name)
+    }
+    pub fn resolve_compiler_local(&mut self, compiler: &Compiler, name: String) -> Option<u32> {
+        compiler.resolve_local(name)
+    }
+    pub fn resolve_upvalue(
+        &mut self,
+        compiler: Option<&mut Box<Compiler>>,
+        name: String,
+    ) -> Option<u32> {
+        if let Some(compiler) = compiler {
+            let local = compiler.resolve_local(name.clone());
+            if let Some(local) = local {
+                return Some(self.add_upvalue(compiler.as_mut(), local, true));
+            }
+
+            let update = self.resolve_upvalue(compiler.enclosing.as_mut(), name);
+
+            match update {
+                Some(update) => {
+                    return Some(self.add_upvalue(compiler.as_mut(), update, false));
+                }
+                None => return None,
+            }
+        }
+
+        None
+    }
+    pub fn add_upvalue(&mut self, compiler: &mut Compiler, index: u32, is_local: bool) -> u32 {
+        if self.current_compiler_mut().is_upvalues_full() {
+            self.error("Too many closure in function.")
+        }
+        compiler.add_upvalue(index, is_local)
     }
     pub fn end_scope(&mut self) {
         self.current_compiler.scope_depth -= 1;
@@ -525,6 +594,10 @@ impl<'a> Parser<'a> {
     pub fn get_prev_token_string(&self) -> String {
         let token = self.previous();
         String::from(self.pick_str(token))
+    }
+    pub fn get_prev_token_str(&self) -> &str {
+        let token = self.previous();
+        self.pick_str(token)
     }
     pub fn define_local_variable(&mut self, name: &str) {
         self.add_local(name.to_string());
