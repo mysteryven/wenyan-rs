@@ -153,14 +153,16 @@ impl<'a> VM<'a> {
 
                                 let up_value = if is_local {
                                     let local_index = self.normalize_local_slot(index);
-                                    self.capture_upvalue(local_index)
+                                    self.capture_upvalue(local_index).unwrap()
                                 } else {
                                     let up_closure_id = self.frame().closure_id();
                                     let up_closure = self.runtime.get_closure(&up_closure_id);
-                                    up_closure.get_up_values(index)
+                                    up_closure.get_up_values(index as usize)
                                 };
 
-                                closure.set_up_value(i as usize, up_value);
+                                self.runtime
+                                    .get_closure_mut(&i)
+                                    .set_up_value(i as usize, up_value);
                             }
                         }
                     }
@@ -680,6 +682,11 @@ impl<'a> VM<'a> {
             opcode::SET_UPVALUE => {
                 self.byte_instruction(&mut opcode_metadata, offset, "OP_SET_UPVALUE")
             }
+            opcode::CLOSE_UPVALUE => self.disassemble_simple_instruction(
+                &mut opcode_metadata,
+                offset,
+                "OP_CLOSE_UPVALUE",
+            ),
             _ => {
                 // this is a unknown opcode
                 print!("{:<20}", format!("{}({})", op_code, "unknown").as_str());

@@ -97,6 +97,10 @@ impl Runtime {
         self.closures.get(id).expect("Function not found.")
     }
 
+    pub fn get_closure_mut(&mut self, id: &u32) -> &mut Closure {
+        self.closures.get_mut(id).expect("Function not found.")
+    }
+
     pub fn interner(&self) -> &Interner {
         &self.interner
     }

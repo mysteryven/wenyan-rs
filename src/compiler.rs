@@ -19,6 +19,22 @@ use crate::{
 pub struct Local {
     name: String,
     depth: Depth,
+    is_captured: bool,
+}
+
+impl Local {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+    pub fn depth(&self) -> Depth {
+        self.depth
+    }
+    pub fn is_captured(&self) -> bool {
+        self.is_captured
+    }
+    pub fn set_captured(&mut self, is_captured: bool) {
+        self.is_captured = true;
+    }
 }
 
 impl Default for Local {
@@ -26,6 +42,7 @@ impl Default for Local {
         Self {
             name: String::default(),
             depth: 0,
+            is_captured: false,
         }
     }
 }
@@ -74,7 +91,11 @@ impl Compiler {
         self.locals.push(Local {
             name,
             depth: self.scope_depth,
+            is_captured: false,
         });
+    }
+    pub fn local_mut(&mut self, index: u32) -> &mut Local {
+        self.locals.get_mut(index as usize).unwrap()
     }
     pub fn set_enclosing(&mut self, enclosing: Box<Compiler>) {
         self.enclosing = Some(enclosing);
@@ -522,17 +543,20 @@ impl<'a> Parser<'a> {
         compiler: Option<&mut Box<Compiler>>,
         name: String,
     ) -> Option<u32> {
-        if let Some(compiler) = compiler {
-            let local = compiler.resolve_local(name.clone());
+        let cur_compiler = compiler.unwrap();
+        if let Some(enclosing) = cur_compiler.enclosing {
+            let local = enclosing.resolve_local(name.clone());
             if let Some(local) = local {
-                return Some(self.add_upvalue(compiler.as_mut(), local, true));
+                let mut v = enclosing.local_mut(local);
+                v.set_captured(true);
+                return Some(self.add_upvalue(cur_compiler, local, true));
             }
 
-            let update = self.resolve_upvalue(compiler.enclosing.as_mut(), name);
+            let update = self.resolve_upvalue(enclosing.enclosing.as_mut(), name);
 
             match update {
                 Some(update) => {
-                    return Some(self.add_upvalue(compiler.as_mut(), update, false));
+                    return Some(self.add_upvalue(cur_compiler, update, false));
                 }
                 None => return None,
             }
@@ -548,12 +572,19 @@ impl<'a> Parser<'a> {
     }
     pub fn end_scope(&mut self) {
         self.current_compiler.scope_depth -= 1;
+
         while !self.current_compiler.locals.is_empty()
             && self.current_compiler.locals.last().unwrap().depth
                 > self.current_compiler.scope_depth
         {
-            self.current_compiler.locals.pop();
-            self.emit_u8(opcode::POP_LOCAL)
+            let v = self.current_compiler.locals.pop();
+            if let Some(v) = v {
+                if v.is_captured() {
+                    self.emit_u8(opcode::CLOSE_UPVALUE)
+                } else {
+                    self.emit_u8(opcode::POP_LOCAL)
+                }
+            }
         }
     }
     pub fn add_local(&mut self, name: String) {
