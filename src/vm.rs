@@ -22,6 +22,18 @@ pub struct VM<'a> {
     runtime: &'a mut Runtime,
     globals: HashMap<String, Value>,
     break_points: Vec<*const u8>,
+    obj_upvalues: List<ObjUpValue>,
+}
+
+pub struct List<T> {
+    head: Link<T>,
+}
+
+type Link<T> = Option<Box<Node<T>>>;
+
+struct Node<T> {
+    elem: T,
+    next: Link<T>,
 }
 
 impl<'a> VM<'a> {
@@ -32,6 +44,7 @@ impl<'a> VM<'a> {
             runtime,
             globals: HashMap::new(),
             break_points: vec![],
+            obj_upvalues: List { head: None },
         }
     }
     pub fn frame_mut(&mut self) -> &mut CallFrame {
@@ -147,7 +160,7 @@ impl<'a> VM<'a> {
                         if let Value::Closure(i) = value {
                             let closure = self.runtime.get_closure(&i);
 
-                            for i in 0..closure.up_values_count() {
+                            for i in 0..closure.upvalues_count() {
                                 let is_local = self.read_byte() != 0;
                                 let index = self.read_u32() as usize;
 
@@ -157,12 +170,12 @@ impl<'a> VM<'a> {
                                 } else {
                                     let up_closure_id = self.frame().closure_id();
                                     let up_closure = self.runtime.get_closure(&up_closure_id);
-                                    up_closure.get_up_values(index as usize)
+                                    up_closure.get_upvalues(index as usize)
                                 };
 
                                 self.runtime
                                     .get_closure_mut(&i)
-                                    .set_up_value(i as usize, up_value);
+                                    .set_upvalue(i as usize, up_value);
                             }
                         }
                     }
@@ -289,7 +302,7 @@ impl<'a> VM<'a> {
                     self.local_stack.get_mut(slot).map(|x| {
                         let value = self.stack.pop();
                         if let Some(value) = value {
-                            **x = value;
+                            *x = Rc::new(value);
                         }
                     });
                 }
@@ -366,15 +379,16 @@ impl<'a> VM<'a> {
                 }
                 opcode::GET_UPVALUE => {
                     let slot = self.read_u32() as usize;
-                    let value = self.frame().closure_id();
-                    let v = self.get_closure().get_up_values(slot).location();
+                    let obj = self.get_closure().get_upvalues(slot);
+                    let v = obj.location();
                     self.stack.push(**v);
                 }
                 opcode::SET_UPVALUE => {
                     let slot = self.read_u32() as usize;
                     let value = self.stack.pop();
                     if let Some(value) = value {
-                        let v = self.get_closure().get_up_values(slot).location_mut();
+                        let mut obj = self.get_closure().get_upvalues(slot);
+                        let v = obj.location_mut();
                         *Rc::get_mut(v).unwrap() = value;
                     }
                 }

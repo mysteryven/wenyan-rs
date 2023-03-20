@@ -31,7 +31,7 @@ Output:
 120
 ```
 
-This project are still work in progress, many features are not implemented yet. You can see more supported examples in [inputs](./tests/inputs/) folder.
+This project is just my personal hobby, I not guarantee the progress, and many features are not implemented yet. You can see more supported examples in [inputs](./tests/inputs/) folder.
 
 ## Differences
 

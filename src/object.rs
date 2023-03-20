@@ -77,34 +77,35 @@ impl Default for ObjUpValue {
 
 pub struct Closure {
     function: Function,
-    up_values: Vec<ObjUpValue>,
-    up_values_count: u32,
+    upvalues: Vec<ObjUpValue>,
+    upvalues_count: u32,
 }
 
 impl Closure {
     pub fn new(function: Function) -> Self {
-        let up_values = vec![];
+        let mut upvalues = vec![];
+        let upvalues_count = function.upvalues_count();
 
-        for i in 0..function.upvalues_count() {
-            up_values.push(ObjUpValue::default());
+        for _ in 0..function.upvalues_count() {
+            upvalues.push(ObjUpValue::default());
         }
 
         Self {
             function,
-            up_values,
-            up_values_count: function.upvalues_count(),
+            upvalues,
+            upvalues_count,
         }
     }
     pub fn function(&self) -> &Function {
         &self.function
     }
-    pub fn up_values_count(&self) -> u32 {
-        self.up_values_count
+    pub fn upvalues_count(&self) -> u32 {
+        self.upvalues_count
     }
-    pub fn set_up_value(&mut self, i: usize, up_value: ObjUpValue) {
-        self.up_values[i] = up_value;
+    pub fn set_upvalue(&mut self, i: usize, up_value: ObjUpValue) {
+        self.upvalues[i] = up_value;
     }
-    pub fn get_up_values(&self, i: usize) -> ObjUpValue {
-        self.up_values[i].clone()
+    pub fn get_upvalues(&self, i: usize) -> ObjUpValue {
+        self.upvalues[i].clone()
     }
 }
